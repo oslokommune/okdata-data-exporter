@@ -1,4 +1,5 @@
 handler: export/main.lambda_handler
+role: arn:aws:iam::***REMOVED***:role/service-role/faktaark_export_read_only_s3
 events:
   - http:
       path: /

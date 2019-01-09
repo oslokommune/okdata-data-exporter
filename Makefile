@@ -1,5 +1,5 @@
 .PHONY: deploy
-deploy: clean_openapi openapi.yml
+deploy: test clean_openapi openapi.yml
 	serverless deploy
 
 .PHONY: print
@@ -9,6 +9,7 @@ print:
 openapi.yml:
 	serverless openapi generate
 
+.PHONY: clean_openapi
 clean_openapi:
 	rm -f openapi.yml
 
