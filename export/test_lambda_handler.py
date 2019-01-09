@@ -11,7 +11,7 @@ class TestLambda_handler(TestCase):
     def test_lambda_handler_with_wrong_user(self):
         testEvent['requestContext']['authorizer']['principalId'] = 'test-dataplatform-2'
         result = main.lambda_handler(testEvent, context={})
-        assert str.startswith(result['body'], "Forbidden")
+        assert str.startswith(json.loads(result['body'])['message'], "Forbidden")
 
 
 

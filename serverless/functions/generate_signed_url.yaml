@@ -1,0 +1,8 @@
+handler: export/main.lambda_handler
+events:
+  - http:
+      path: /
+      method: post
+      cors: true
+      documentation: ${file(serverless/documentation/generate_signed_url.yaml)}
+      authorizer: ${file(serverless/kc-authorizer.yaml)}

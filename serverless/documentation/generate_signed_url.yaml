@@ -1,0 +1,13 @@
+summary: "Creates a signed url for the s3 object"
+description: "Requires s3 bucket + key"
+requestBody:
+  description:
+  requestModels:
+    "application/json": "exportRequest"
+methodResponses:
+  - statusCode: "200"
+    responseModels:
+      "application/json": "exportResponse"
+  - statusCode: "400"
+    responseModels:
+      "application/json": "awsError"

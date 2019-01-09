@@ -1,0 +1,28 @@
+service: data-exporter
+
+provider:
+  name: aws
+  runtime: python3.7
+  region: eu-central-1
+  stage: dev
+
+plugins:
+  - serverless-aws-documentation
+  - serverless-openapi-documentation
+
+package:
+  include: export/main.py
+
+functions:
+  generate_signed_url: ${file(serverless/functions/generate_signed_url.yaml)}
+
+custom:
+  documentation:
+    title: Data Exporter
+    version: '0.1.0'
+    summary: Data export API
+    description: Creates a signed url that can be used to download the corresponding s3 object.
+    models:
+      - ${file(./serverless/models/exportRequest.yaml)}
+      - ${file(./serverless/models/exportResponse.yaml)}
+      - ${file(./serverless/models/awsError.yaml)}

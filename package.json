@@ -1,0 +1,10 @@
+{
+  "name": "data-export",
+  "version": "1.0.0",
+  "description": "Data exporter",
+  "author": "",
+  "devDependencies": {
+    "serverless-aws-documentation": "^1.1.0",
+    "serverless-openapi-documentation": "^0.4.0"
+  }
+}

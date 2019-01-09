@@ -1,0 +1,10 @@
+name: exportResponse
+description: A response containing a signed url
+contentType: application/json
+schema:
+  type: object
+  required:
+    - url
+  properties:
+    url:
+      type: string

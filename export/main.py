@@ -18,7 +18,7 @@ def lambda_handler(event, context):
         return {
             "isBase64Encoded": False,
             'statusCode': 403,
-            'body': 'Forbidden: Only the test user can do this'
+            'body': json.dumps({'message': 'Forbidden: Only the test user can do this'})
         }
 
 

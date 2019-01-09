@@ -1,0 +1,53 @@
+openapi: 3.0.0
+components:
+  schemas:
+    exportRequest:
+      type: object
+      required:
+        - bucket
+        - key
+      properties:
+        bucket:
+          type: string
+        key:
+          type: string
+    exportResponse:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+    awsError:
+      type: object
+      required:
+        - statusCode
+      properties:
+        statusCode:
+          type: number
+  securitySchemes: {}
+info:
+  title: Data Exporter
+  description: >-
+    Creates a signed url that can be used to download the corresponding s3
+    object.
+  version: 0.1.0
+paths:
+  //:
+    post:
+      operationId: generate_signed_url
+      summary: Creates a signed url for the s3 object
+      description: Requires s3 bucket + key
+      responses:
+        '200':
+          description: Status 200 Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportResponse'
+        '400':
+          description: Status 400 Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/awsError'
