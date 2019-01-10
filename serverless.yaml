@@ -3,12 +3,11 @@ service: data-exporter
 provider:
   name: aws
   runtime: python3.7
-  region: eu-central-1
-  stage: dev
+  region: ${opt:region, 'eu-west-1'}
+  stage: ${opt:stage, 'dev'}
 
 plugins:
   - serverless-aws-documentation
-  - serverless-openapi-documentation
 
 package:
   include: export/main.py

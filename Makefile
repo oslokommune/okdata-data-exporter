@@ -1,17 +1,15 @@
 .PHONY: deploy
-deploy: test clean_openapi openapi.yml
+deploy: test
 	serverless deploy
+	serverless downloadDocumentation --outputFileName=openapi.yaml
 
 .PHONY: print
 print:
 	serverless print
 
-openapi.yml:
-	serverless openapi generate
-
 .PHONY: clean_openapi
 clean_openapi:
-	rm -f openapi.yml
+	rm -f openapi.yaml
 
 .PHONY: test
 test:

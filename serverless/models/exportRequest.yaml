@@ -2,7 +2,6 @@ name: exportRequest
 description: A request containing bucket + key
 contentType: application/json
 schema:
-  type: object
   required:
     - bucket
     - key

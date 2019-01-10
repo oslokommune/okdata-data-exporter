@@ -2,7 +2,6 @@ openapi: 3.0.0
 components:
   schemas:
     exportRequest:
-      type: object
       required:
         - bucket
         - key
