@@ -19,7 +19,7 @@ functions:
 custom:
   documentation:
     title: Data Exporter
-    version: '0.1.0'
+    version: ${file(metadata.yaml):version}
     summary: Data export API
     description: Creates a signed url that can be used to download the corresponding s3 object.
     models:

@@ -1,4 +1,4 @@
-arn: arn:aws:lambda:eu-central-1:***REMOVED***:function:keycloak-authorizer-dev-authorize
+arn: arn:aws:lambda:eu-central-1:***REMOVED***:function:keycloak-authorizer-dev-authenticate
 resultTtlInSeconds: 300
 identitySource: method.request.header.Authorization
 identityValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
