@@ -5,11 +5,16 @@ provider:
   runtime: python3.7
   region: ${opt:region, 'eu-west-1'}
   stage: ${opt:stage, 'dev'}
+  deploymentBucket:
+    name: ok-origo-dataplatform-config-${self:provider.stage}
+    serverSideEncryption: AES256
+  deploymentPrefix: deploy
 
 plugins:
   - serverless-aws-documentation
 
 package:
+  exclude: .*/**
   include: export/main.py
 
 functions:

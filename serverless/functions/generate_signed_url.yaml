@@ -1,5 +1,5 @@
 handler: export/main.lambda_handler
-role: arn:aws:iam::***REMOVED***:role/service-role/faktaark_export_read_only_s3
+role: arn:aws:iam::***REMOVED***:role/ok-origo-dataplatform-data-export-dev
 events:
   - http:
       path: /
