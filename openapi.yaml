@@ -1,0 +1,86 @@
+---
+swagger: "2.0"
+info:
+  version: "2019-01-14T12:55:11Z"
+  title: "dev-data-exporter"
+host: "ukehq3gwgb.execute-api.eu-west-1.amazonaws.com"
+basePath: "/dev"
+schemes:
+- "https"
+paths:
+  /:
+    post:
+      summary: "Creates a signed url for the s3 object"
+      description: "Requires s3 bucket + key"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "exportRequest"
+        description: "test"
+        required: true
+        schema:
+          $ref: "#/definitions/exportRequest"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/exportResponse"
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/awsError"
+      security:
+      - authenticate: []
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Credentials:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+securityDefinitions:
+  authenticate:
+    type: "apiKey"
+    name: "Authorization"
+    in: "header"
+    x-amazon-apigateway-authtype: "custom"
+definitions:
+  exportResponse:
+    type: "object"
+    required:
+    - "url"
+    properties:
+      url:
+        type: "string"
+    description: "A response containing a signed url"
+  awsError:
+    type: "object"
+    required:
+    - "statusCode"
+    properties:
+      statusCode:
+        type: "number"
+    description: "An error response"
+  exportRequest:
+    required:
+    - "bucket"
+    - "key"
+    properties:
+      bucket:
+        type: "string"
+      key:
+        type: "string"
+    description: "A request containing bucket + key"
