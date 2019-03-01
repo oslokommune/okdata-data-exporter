@@ -2,8 +2,9 @@ summary: "Creates a signed url for the s3 object"
 description: "Requires s3 bucket + key"
 requestBody:
   description: test
-requestModels:
-  "application/json": "exportRequest"
+pathParams:
+  - name: key
+    description: s3 key to export
 methodResponses:
   - statusCode: "200"
     responseModels:

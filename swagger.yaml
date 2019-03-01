@@ -1,28 +1,23 @@
 ---
 swagger: "2.0"
 info:
-  version: "2019-01-14T12:55:11Z"
+  version: "2019-03-01T13:56:37Z"
   title: "dev-data-exporter"
-host: "ukehq3gwgb.execute-api.eu-west-1.amazonaws.com"
+host: "ajspk7c4x7.execute-api.eu-west-1.amazonaws.com"
 basePath: "/dev"
 schemes:
 - "https"
 paths:
-  /:
-    post:
-      summary: "Creates a signed url for the s3 object"
-      description: "Requires s3 bucket + key"
-      consumes:
-      - "application/json"
+  /{key}:
+    get:
       produces:
       - "application/json"
       parameters:
-      - in: "body"
-        name: "exportRequest"
-        description: "test"
+      - name: "key"
+        in: "path"
+        description: "s3 key to export"
         required: true
-        schema:
-          $ref: "#/definitions/exportRequest"
+        type: "string"
       responses:
         200:
           description: "200 response"
@@ -59,13 +54,18 @@ securityDefinitions:
     x-amazon-apigateway-authtype: "custom"
 definitions:
   exportResponse:
-    type: "object"
-    required:
-    - "url"
-    properties:
-      url:
-        type: "string"
+    type: "array"
     description: "A response containing a signed url"
+    items:
+      type: "object"
+      properties:
+        key:
+          type: "string"
+        url:
+          type: "string"
+      required:
+      - "key"
+      - "url"
   awsError:
     type: "object"
     required:
@@ -74,13 +74,3 @@ definitions:
       statusCode:
         type: "number"
     description: "An error response"
-  exportRequest:
-    required:
-    - "bucket"
-    - "key"
-    properties:
-      bucket:
-        type: "string"
-      key:
-        type: "string"
-    description: "A request containing bucket + key"

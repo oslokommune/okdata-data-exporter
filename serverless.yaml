@@ -9,13 +9,21 @@ provider:
     name: ok-origo-dataplatform-config-${self:provider.stage}
     serverSideEncryption: AES256
   deploymentPrefix: deploy
+  iamManagedPolicies:
+    - Fn::Join:
+      - ':'
+      - - 'arn:aws:iam:'
+        - Ref: AWS::AccountId
+        - 'policy/data-exporter-policy'
 
 plugins:
   - serverless-aws-documentation
 
 package:
-  exclude: .*/**
-  include: export/main.py
+  exclude:
+    - "./**"
+  include:
+    - main.py
 
 functions:
   generate_signed_url: ${file(serverless/functions/generate_signed_url.yaml)}
