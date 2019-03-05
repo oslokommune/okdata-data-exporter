@@ -1,16 +1,17 @@
+.PHONY: init
+init:
+	python3 -m pip install tox black pip-tools
+	pip-compile
+
+.PHONY: format
+format: init
+	python3 -m black main.py test_lambda_handler.py setup.py --line-length 160
+
 .PHONY: deploy
-deploy: test
-	serverless deploy
-	serverless downloadDocumentation --outputFileName=openapi.yaml
-
-.PHONY: print
-print:
-	serverless print
-
-.PHONY: clean_openapi
-clean_openapi:
-	rm -f openapi.yaml
+deploy: format test
+	sls deploy && \
+	sls downloadDocumentation --outputFileName swagger.yaml
 
 .PHONY: test
 test:
-	python3 -m unittest -v export/test_*
+	python3 -m tox -p auto

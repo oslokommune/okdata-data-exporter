@@ -1,9 +1,14 @@
-handler: export/main.lambda_handler
-role: arn:aws:iam::***REMOVED***:role/ok-origo-dataplatform-data-export-dev
+handler: main.lambda_handler
+environment:
+  STAGE: ${self:provider.stage}
 events:
-  - http:
-      path: /
-      method: post
-      cors: true
-      documentation: ${file(serverless/documentation/generate_signed_url.yaml)}
-      authorizer: ${file(serverless/kc-authorizer.yaml)}
+- http:
+    path: /{key}
+    method: get
+    cors: true
+    documentation: ${file(serverless/documentation/generate_signed_url.yaml)}
+    request:
+      parameters:
+        paths:
+          key: true
+    authorizer: ${file(serverless/kc-authorizer.yaml)}
