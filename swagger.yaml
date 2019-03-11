@@ -1,15 +1,17 @@
 ---
 swagger: "2.0"
 info:
-  version: "2019-03-01T13:56:37Z"
-  title: "dev-data-exporter"
-host: "ajspk7c4x7.execute-api.eu-west-1.amazonaws.com"
-basePath: "/dev"
+  version: "2019-03-11T10:24:40Z"
+  title: "prod-data-exporter"
+host: "3bck00l1ng.execute-api.eu-west-1.amazonaws.com"
+basePath: "/prod"
 schemes:
 - "https"
 paths:
   /{key}:
     get:
+      summary: "Creates a signed url for the s3 object"
+      description: "Requires s3 bucket + key"
       produces:
       - "application/json"
       parameters:
