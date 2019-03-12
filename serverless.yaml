@@ -18,6 +18,7 @@ provider:
 
 plugins:
   - serverless-aws-documentation
+  - serverless-pseudo-parameters
 
 package:
   exclude:

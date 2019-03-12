@@ -9,8 +9,12 @@ format: init
 
 .PHONY: deploy
 deploy: format test
-	sls deploy && \
-	sls downloadDocumentation --outputFileName swagger.yaml
+	sls deploy
+
+.PHONY: deploy-prod
+deploy-prod: format test
+	sls deploy --stage prod && \
+	sls --stage prod downloadDocumentation --outputFileName swagger.yaml
 
 .PHONY: test
 test:

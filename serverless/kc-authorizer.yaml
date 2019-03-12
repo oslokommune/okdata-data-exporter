@@ -1,4 +1,5 @@
-arn: arn:aws:lambda:eu-west-1:***REMOVED***:function:keycloak-authorizer-dev-authenticate
+arn: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
+
 resultTtlInSeconds: 300
 identitySource: method.request.header.Authorization
 identityValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
