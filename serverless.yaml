@@ -1,3 +1,4 @@
+frameworkVersion: ">=1.50.0 <2.0.0"
 service: data-exporter
 
 provider:
@@ -15,10 +16,21 @@ provider:
       - - 'arn:aws:iam:'
         - Ref: AWS::AccountId
         - 'policy/data-exporter-policy'
+  tags:
+    GIT_REV: ${git:branch}:${git:sha1}
+  environment:
+    GIT_REV: ${git:branch}:${git:sha1}
 
 plugins:
   - serverless-aws-documentation
   - serverless-pseudo-parameters
+  - serverless-plugin-git-variables
+
+resources:
+  Description: >
+    ${self:service} ${git:branch}:${git:sha1}
+
+    ${git:message}
 
 package:
   exclude:
@@ -39,3 +51,4 @@ custom:
       - ${file(./serverless/models/exportRequest.yaml)}
       - ${file(./serverless/models/exportResponse.yaml)}
       - ${file(./serverless/models/awsError.yaml)}
+  exportGitVariables: false
