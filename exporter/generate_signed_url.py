@@ -7,7 +7,7 @@ import boto3
 S3_BUCKET = "ok-origo-dataplatform-{}".format(os.environ["STAGE"])
 
 
-def lambda_handler(event, context):
+def handler(event, context):
     params = event["pathParameters"]
     requested_key = urllib.parse.unquote_plus(params["key"])
     return {

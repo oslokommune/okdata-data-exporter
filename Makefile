@@ -16,7 +16,7 @@ init:
 
 .PHONY: format
 format: init
-	python3 -m black main.py test_lambda_handler.py setup.py
+	python3 -m black exporter/*.py tests/*.py setup.py
 
 .PHONY: deploy
 deploy: format test login-dev

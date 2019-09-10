@@ -1,4 +1,4 @@
-handler: main.lambda_handler
+handler: exporter.generate_signed_url.handler
 environment:
   STAGE: ${self:provider.stage}
 events:

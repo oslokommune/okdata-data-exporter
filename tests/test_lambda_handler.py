@@ -4,7 +4,7 @@ import urllib
 import boto3
 from moto import mock_s3
 
-import main
+from exporter.generate_signed_url import handler
 
 bucket = "ok-origo-dataplatform-dev"
 base_key = "processed%2Fgreen%2Fboligpriser_historic-4owcY%2Fversion%3D1-zV86jpeY%2Fedition%3DEDITION-HAkZy%2F"
@@ -24,9 +24,9 @@ def setup():
 
 
 @mock_s3
-def test_lambda_handler_specific_object():
+def test_generate_signed_url_handler_specific_object():
     setup()
-    result = main.lambda_handler(base_event, context={})
+    result = handler(base_event, context={})
     assert (
         json.loads(result["body"])[0]["key"]
         == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/0.json"
@@ -34,9 +34,9 @@ def test_lambda_handler_specific_object():
 
 
 @mock_s3
-def test_lambda_handler_with_prefix():
+def test_generate_signed_url_handler_with_prefix():
     setup()
-    result = main.lambda_handler(prefix_key_event, context={})
+    result = handler(prefix_key_event, context={})
     assert (
         json.loads(result["body"])[2]["key"]
         == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"

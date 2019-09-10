@@ -36,7 +36,7 @@ package:
   exclude:
     - "./**"
   include:
-    - main.py
+    - exporter/generate_signed_url.py
 
 functions:
   generate_signed_url: ${file(serverless/functions/generate_signed_url.yaml)}
