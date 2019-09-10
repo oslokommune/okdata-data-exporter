@@ -16,22 +16,35 @@ def setup():
         s3.create_bucket(Bucket=bucket)
         for number in range(0, 10):
             parsed_base_key = urllib.parse.unquote_plus(base_key)
-            s3.put_object(Body="contents", Bucket=bucket, Key="{}{}.json".format(parsed_base_key, number))
+            s3.put_object(
+                Body="contents",
+                Bucket=bucket,
+                Key="{}{}.json".format(parsed_base_key, number),
+            )
 
 
 @mock_s3
 def test_lambda_handler_specific_object():
     setup()
     result = main.lambda_handler(base_event, context={})
-    assert json.loads(result["body"])[0]["key"] == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/0.json"
+    assert (
+        json.loads(result["body"])[0]["key"]
+        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/0.json"
+    )
 
 
 @mock_s3
 def test_lambda_handler_with_prefix():
     setup()
     result = main.lambda_handler(prefix_key_event, context={})
-    assert json.loads(result["body"])[2]["key"] == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"
-    assert json.loads(result["body"])[9]["key"] == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
+    assert (
+        json.loads(result["body"])[2]["key"]
+        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"
+    )
+    assert (
+        json.loads(result["body"])[9]["key"]
+        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
+    )
 
 
 base_event = {
