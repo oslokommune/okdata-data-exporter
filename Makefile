@@ -10,12 +10,12 @@
 .PROD_PROFILE := saml-dataplatform-prod
 
 .PHONY: init
-init:
+init: get-layer-deps
 	python3 -m pip install tox black pip-tools
 	pip-compile
 
 .PHONY: format
-format: init
+format:
 	python3 -m black exporter/*.py tests/*.py setup.py
 
 .PHONY: deploy
@@ -47,3 +47,7 @@ is-git-clean:
 		echo Git working directory is dirty, aborting >&2; \
 		false; \
 	fi
+
+.PHONE: get-layer-deps
+get-layer-deps:
+	python3 -m pip install --extra-index-url https://artifacts.oslo.kommune.no/repository/itas-pypip/simple dataplatform-base-layer --upgrade

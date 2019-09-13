@@ -3,8 +3,9 @@ import urllib
 
 import boto3
 from moto import mock_s3
-
+from unittest.mock import patch
 from exporter.generate_signed_url import handler
+from exporter.errors import DatasetError, DatasetNotFoundError
 
 bucket = "ok-origo-dataplatform-dev"
 base_key = "processed%2Fgreen%2Fboligpriser_historic-4owcY%2Fversion%3D1-zV86jpeY%2Fedition%3DEDITION-HAkZy%2F"
@@ -24,7 +25,11 @@ def setup():
 
 
 @mock_s3
-def test_generate_signed_url_handler_specific_object():
+@patch(
+    "exporter.generate_signed_url.get_dataset",
+    return_value={"confidentiality": "green"},
+)
+def test_generate_signed_url_handler_specific_object(test_input):
     setup()
     result = handler(base_event, context={})
     assert (
@@ -34,7 +39,11 @@ def test_generate_signed_url_handler_specific_object():
 
 
 @mock_s3
-def test_generate_signed_url_handler_with_prefix():
+@patch(
+    "exporter.generate_signed_url.get_dataset",
+    return_value={"confidentiality": "green"},
+)
+def test_generate_signed_url_handler_with_prefix(test_input):
     setup()
     result = handler(prefix_key_event, context={})
     assert (
@@ -45,6 +54,39 @@ def test_generate_signed_url_handler_with_prefix():
         json.loads(result["body"])[9]["key"]
         == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
     )
+
+
+@mock_s3
+@patch(
+    "exporter.generate_signed_url.get_dataset", return_value={"confidentiality": "red"}
+)
+def test_generate_signed_url_with_red_confidentiality(test_input):
+    setup()
+    result = handler(prefix_key_event, context={})
+    assert (
+        json.loads(result["body"])[2]["key"]
+        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"
+    )
+    assert (
+        json.loads(result["body"])[9]["key"]
+        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
+    )
+
+
+@mock_s3
+@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetNotFoundError)
+def test_generate_signed_url_when_get_dataset_raise_not_found_error(test_input):
+    setup()
+    result = handler(prefix_key_event, context={})
+    assert result["statusCode"] == 404
+
+
+@mock_s3
+@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetError)
+def test_generate_signed_url_when_get_dataset_raise_dataset_error(test_input):
+    setup()
+    result = handler(prefix_key_event, context={})
+    assert result["statusCode"] == 400
 
 
 base_event = {
@@ -74,6 +116,7 @@ base_event = {
         "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
         "X-Forwarded-Port": "443",
         "X-Forwarded-Proto": "https",
+        "Authorization": "token",
     },
     "requestContext": {
         "accountId": "123456789012",

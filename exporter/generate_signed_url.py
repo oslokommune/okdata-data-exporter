@@ -1,27 +1,69 @@
 import json
 import os
 import urllib
-
+import logging
 import boto3
 
-S3_BUCKET = "ok-origo-dataplatform-{}".format(os.environ["STAGE"])
+from auth import SimpleAuth
+from exporter.errors import DatasetError, DatasetNotFoundError
+from exporter.common import error_response
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
+BUCKET = os.environ["BUCKET"]
+METADATA_API = os.environ.get("METADATA_API")
+ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
+xray = os.environ.get("AWS_XRAY_SDK_ENABLED")
 
 
 def handler(event, context):
     params = event["pathParameters"]
-    requested_key = urllib.parse.unquote_plus(params["key"])
-    return {
-        "statusCode": 200,
-        "body": json.dumps(generate_signed_url(S3_BUCKET, requested_key)),
-    }
+    dataset = urllib.parse.unquote_plus(params["key"])
+
+    try:
+        datasetInfo = get_dataset(event, dataset)
+    except DatasetNotFoundError:
+        log.exception(f"Cannot find dataset: {dataset}")
+        return error_response(404, "Could not find dataset")
+    except Exception as e:
+        log.exception(f"Unexpected Exception found: {e}")
+        return error_response(400, "Could not complete request, please try again later")
+
+    # Anyone with a logged in user can download green datasets
+    if datasetInfo["confidentiality"] == "green":
+        return {
+            "statusCode": 200,
+            "body": json.dumps(generate_signed_url(BUCKET, dataset)),
+        }
+
+    # Only owner can download non-green datasets
+    if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
+        log.info("Access denied")
+        return error_response(403, "Forbidden")
+
+    return {"statusCode": 200, "body": json.dumps(generate_signed_url(BUCKET, dataset))}
 
 
-def generate_signed_url(bucket, key):
+def get_dataset(event, dataset):
+    url = f"{METADATA_API}/datasets/{dataset}"
+    req = SimpleAuth().poor_mans_delegation(event)
+    response = req.get(url)
+
+    if response.status_code == 404:
+        raise DatasetNotFoundError(f"Could not find dataset: {dataset}")
+    if response.status_code != 200:
+        raise DatasetError()
+    data = response.json()
+    return data
+
+
+def generate_signed_url(bucket, dataset_id):
     # Check authz: Can user (Authorization header)
     session = boto3.Session()
     s3 = session.client("s3")
 
-    resp = s3.list_objects_v2(Bucket=bucket, Prefix=key)
+    resp = s3.list_objects_v2(Bucket=bucket, Prefix=dataset_id)
 
     signed_urls = [
         {
@@ -34,5 +76,4 @@ def generate_signed_url(bucket, key):
         }
         for obj in resp["Contents"]
     ]
-
     return signed_urls
