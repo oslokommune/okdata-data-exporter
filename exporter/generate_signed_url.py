@@ -20,9 +20,11 @@ xray = os.environ.get("AWS_XRAY_SDK_ENABLED")
 def handler(event, context):
     params = event["pathParameters"]
     dataset = urllib.parse.unquote_plus(params["key"])
+    log.info(f"generating signed URL for dataset: {dataset}")
 
     try:
         datasetInfo = get_dataset(event, dataset)
+        log.info(f"datasetInfo: {datasetInfo}")
     except DatasetNotFoundError:
         log.exception(f"Cannot find dataset: {dataset}")
         return error_response(404, "Could not find dataset")
@@ -39,7 +41,7 @@ def handler(event, context):
 
     # Only owner can download non-green datasets
     if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
-        log.info("Access denied")
+        log.info(f"Access denied to datasert: {dataset}")
         return error_response(403, "Forbidden")
 
     return {"statusCode": 200, "body": json.dumps(generate_signed_url(BUCKET, dataset))}
