@@ -14,7 +14,6 @@ log.setLevel(logging.INFO)
 BUCKET = os.environ["BUCKET"]
 METADATA_API = os.environ.get("METADATA_API")
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
-xray = os.environ.get("AWS_XRAY_SDK_ENABLED")
 
 
 def handler(event, context):

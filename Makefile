@@ -16,7 +16,7 @@ init: get-layer-deps
 
 .PHONY: format
 format:
-	python3 -m black exporter/*.py tests/*.py setup.py
+	python3 -m black .
 
 .PHONY: deploy
 deploy: format test login-dev
