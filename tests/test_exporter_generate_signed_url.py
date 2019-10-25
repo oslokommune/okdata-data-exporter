@@ -4,7 +4,7 @@ from unittest.mock import patch
 import boto3
 from moto import mock_s3
 
-from exporter.errors import DatasetError, DatasetNotFoundError
+from exporter.errors import MetadataError, MetadataNotFound
 from exporter.generate_signed_url import handler
 
 bucket = "ok-origo-dataplatform-dev"
@@ -91,7 +91,7 @@ def test_generate_signed_url_with_red_confidentiality(*args):
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetNotFoundError)
+@patch("exporter.generate_signed_url.get_metadata", side_effect=MetadataNotFound)
 @patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
 @patch("exporter.generate_signed_url.has_distributions", return_value=True)
 def test_generate_signed_url_when_get_dataset_raise_not_found_error(*args):
@@ -101,7 +101,7 @@ def test_generate_signed_url_when_get_dataset_raise_not_found_error(*args):
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetError)
+@patch("exporter.generate_signed_url.get_dataset", side_effect=MetadataError)
 @patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
 @patch("exporter.generate_signed_url.has_distributions", return_value=True)
 def test_generate_signed_url_when_get_dataset_raise_dataset_error(*args):

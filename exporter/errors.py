@@ -1,6 +1,14 @@
-class DatasetNotFoundError(Exception):
+class MetadataNotFound(Exception):
     pass
 
 
-class DatasetError(Exception):
+class MetadataError(Exception):
+    pass
+
+
+class DatasetNotFound(MetadataNotFound):
+    pass
+
+
+class EditionNotFound(MetadataError):
     pass

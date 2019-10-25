@@ -4,7 +4,12 @@ import logging
 import boto3
 
 from auth import SimpleAuth
-from exporter.errors import DatasetError, DatasetNotFoundError
+from exporter.errors import (
+    MetadataError,
+    MetadataNotFound,
+    DatasetNotFound,
+    EditionNotFound,
+)
 from exporter.common import error_response, response
 
 log = logging.getLogger()
@@ -26,9 +31,12 @@ def handler(event, context):
         dataset_info = get_dataset(event, dataset)
         edition_info = get_edition(event, dataset, version, edition)
         log.info(f"datasetInfo: {dataset_info}")
-    except DatasetNotFoundError:
-        log.exception(f"Cannot find dataset: {edition}")
-        return error_response(404, "Could not find edition")
+    except DatasetNotFound:
+        log.exception(f"Cannot find dataset: {dataset}")
+        return error_response(404, "Could not find dataset")
+    except EditionNotFound:
+        log.exception(f"Cannot find edition: {version}/{edition}")
+        return error_response(404, "Could not find version/edition")
     except Exception as e:
         log.exception(f"Unexpected Exception found: {e}")
         return error_response(400, "Could not complete request, please try again later")
@@ -62,13 +70,19 @@ def has_distributions(event, edition):
 
 def get_edition(event, dataset, version, edition):
     url = f"{METADATA_API}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    return get_metadata(event, "edition", url)
+    try:
+        return get_metadata(event, "edition", url)
+    except MetadataNotFound:
+        raise EditionNotFound
 
 
 def get_dataset(event, dataset):
     url = f"{METADATA_API}/datasets/{dataset}"
     log.info(f"Looking up: {dataset}")
-    return get_metadata(event, "dataset", url)
+    try:
+        return get_metadata(event, "dataset", url)
+    except MetadataNotFound:
+        raise DatasetNotFound
 
 
 def get_metadata(event, type, url):
@@ -76,10 +90,10 @@ def get_metadata(event, type, url):
     req = SimpleAuth().poor_mans_delegation(event)
     response = req.get(url)
     if response.status_code == 404:
-        raise DatasetNotFoundError(f"Could not find {type}")
+        raise MetadataNotFound(f"Could not find {type}")
     if response.status_code != 200:
         log.exception(response.json())
-        raise DatasetError()
+        raise MetadataError(response.status_code)
     data = response.json()
     return data
 
