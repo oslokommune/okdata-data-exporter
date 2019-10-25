@@ -1,12 +1,11 @@
 import json
 import os
-import urllib
 import logging
 import boto3
 
 from auth import SimpleAuth
 from exporter.errors import DatasetError, DatasetNotFoundError
-from exporter.common import error_response
+from exporter.common import error_response, response
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -18,53 +17,93 @@ ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 def handler(event, context):
     params = event["pathParameters"]
-    dataset = urllib.parse.unquote_plus(params["key"])
+    dataset = params["dataset"]
+    version = params["version"]
+    edition = params["edition"]
     log.info(f"generating signed URL for dataset: {dataset}")
 
     try:
-        datasetInfo = get_dataset(event, dataset)
-        log.info(f"datasetInfo: {datasetInfo}")
+        dataset_info = get_dataset(event, dataset)
+        edition_info = get_edition(event, dataset, version, edition)
+        log.info(f"datasetInfo: {dataset_info}")
     except DatasetNotFoundError:
-        log.exception(f"Cannot find dataset: {dataset}")
-        return error_response(404, "Could not find dataset")
+        log.exception(f"Cannot find dataset: {edition}")
+        return error_response(404, "Could not find edition")
     except Exception as e:
         log.exception(f"Unexpected Exception found: {e}")
         return error_response(400, "Could not complete request, please try again later")
 
+    if not has_distributions(event, edition_info):
+        return response(404, f"Missing data for {edition_info['Id']}")
+
     # Anyone with a logged in user can download green datasets
-    if datasetInfo["confidentiality"] == "green":
-        return {
-            "statusCode": 200,
-            "body": json.dumps(generate_signed_url(BUCKET, dataset)),
-        }
+    if dataset_info["confidentiality"] == "green":
+        signed_url = generate_signed_url(
+            BUCKET, edition=edition_info, dataset=dataset_info, version=version
+        )
+        return response(200, json.dumps(signed_url))
 
     # Only owner can download non-green datasets
     if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
         log.info(f"Access denied to datasert: {dataset}")
         return error_response(403, "Forbidden")
 
-    return {"statusCode": 200, "body": json.dumps(generate_signed_url(BUCKET, dataset))}
+    signed_url = generate_signed_url(
+        BUCKET, edition=edition_info, dataset=dataset_info, version=version
+    )
+    return response(200, json.dumps(signed_url))
+
+
+def has_distributions(event, edition):
+    url = f"{METADATA_API}{edition['_links']['self']['href']}/distributions"
+    distributions = get_metadata(event, "distributions", url)
+    return bool(distributions)
+
+
+def get_edition(event, dataset, version, edition):
+    url = f"{METADATA_API}/datasets/{dataset}/versions/{version}/editions/{edition}"
+    return get_metadata(event, "edition", url)
 
 
 def get_dataset(event, dataset):
     url = f"{METADATA_API}/datasets/{dataset}"
+    log.info(f"Looking up: {dataset}")
+    return get_metadata(event, "dataset", url)
+
+
+def get_metadata(event, type, url):
+    log.info(f"get metadata: {url}")
     req = SimpleAuth().poor_mans_delegation(event)
     response = req.get(url)
-
     if response.status_code == 404:
-        raise DatasetNotFoundError(f"Could not find dataset: {dataset}")
+        raise DatasetNotFoundError(f"Could not find {type}")
     if response.status_code != 200:
+        log.exception(response.json())
         raise DatasetError()
     data = response.json()
     return data
 
 
-def generate_signed_url(bucket, dataset_id):
-    # Check authz: Can user (Authorization header)
+def generate_signed_url(bucket, dataset, version, edition):
+    processing_stage = dataset["processing_stage"]
+    confidentiality = dataset["confidentiality"]
+    dataset_id = dataset["Id"]
+    version = edition["Id"].split("/")[1]
+    edition_id = edition["Id"].split("/")[-1]
+    common_prefix = f"{processing_stage}/{confidentiality}"
+    dataset_prefix = f"/{dataset_id}/version={version}/edition={edition_id}"
+
+    if "parent_id" in dataset:
+        parent_id = dataset["parent_id"]
+        parent_dataset = f"/{parent_id}"
+        prefix = common_prefix + parent_dataset + dataset_prefix
+    else:
+        prefix = common_prefix + dataset_prefix
+
     session = boto3.Session()
     s3 = session.client("s3")
-
-    resp = s3.list_objects_v2(Bucket=bucket, Prefix=dataset_id)
+    log.info(f"Listing objects in bucket {bucket}. Prefix: {prefix}")
+    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
     signed_urls = [
         {
