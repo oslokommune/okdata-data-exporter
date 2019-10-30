@@ -47,7 +47,7 @@ def handler(event, context):
     # Anyone with a logged in user can download green datasets
     if dataset_info["confidentiality"] == "green":
         signed_url = generate_signed_url(
-            BUCKET, edition=edition_info, dataset=dataset_info, version=version
+            BUCKET, edition=edition_info, dataset=dataset_info
         )
         return response(200, json.dumps(signed_url))
 
@@ -56,9 +56,7 @@ def handler(event, context):
         log.info(f"Access denied to datasert: {dataset}")
         return error_response(403, "Forbidden")
 
-    signed_url = generate_signed_url(
-        BUCKET, edition=edition_info, dataset=dataset_info, version=version
-    )
+    signed_url = generate_signed_url(BUCKET, edition=edition_info, dataset=dataset_info)
     return response(200, json.dumps(signed_url))
 
 
@@ -98,21 +96,18 @@ def get_metadata(event, type, url):
     return data
 
 
-def generate_signed_url(bucket, dataset, version, edition):
+def generate_signed_url(bucket, dataset, edition):
     processing_stage = dataset["processing_stage"]
     confidentiality = dataset["confidentiality"]
-    dataset_id = dataset["Id"]
-    version = edition["Id"].split("/")[1]
-    edition_id = edition["Id"].split("/")[-1]
-    common_prefix = f"{processing_stage}/{confidentiality}"
-    dataset_prefix = f"/{dataset_id}/version={version}/edition={edition_id}"
+    (dataset_id, version, edition_id) = edition["Id"].split("/")
+    common_prefix = f"{processing_stage}/{confidentiality}/"
+    dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
 
     if "parent_id" in dataset:
         parent_id = dataset["parent_id"]
-        parent_dataset = f"/{parent_id}"
-        prefix = common_prefix + parent_dataset + dataset_prefix
-    else:
-        prefix = common_prefix + dataset_prefix
+        dataset_prefix = f"{parent_id}/{dataset_prefix}"
+
+    prefix = common_prefix + dataset_prefix
 
     session = boto3.Session()
     s3 = session.client("s3")
