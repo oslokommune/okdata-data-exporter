@@ -1,62 +1,13 @@
 ---
 swagger: "2.0"
 info:
-  version: "2019-10-31T09:31:52Z"
+  version: "2019-10-31T09:37:13Z"
   title: "prod-data-exporter"
 host: "api.data.oslo.systems"
 basePath: "/data-exporter"
 schemes:
 - "https"
 paths:
-  /remove/{dataset}/{version}/{edition}:
-    get:
-      produces:
-      - "application/json"
-      parameters:
-      - name: "dataset"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "version"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "key"
-        in: "path"
-        required: false
-        type: "string"
-      - name: "edition"
-        in: "path"
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "200 response"
-          schema:
-            $ref: "#/definitions/exportResponse"
-        400:
-          description: "400 response"
-          schema:
-            $ref: "#/definitions/awsError"
-      security:
-      - authenticate: []
-    options:
-      consumes:
-      - "application/json"
-      produces:
-      - "application/json"
-      responses:
-        200:
-          description: "200 response"
-          headers:
-            Access-Control-Allow-Origin:
-              type: "string"
-            Access-Control-Allow-Methods:
-              type: "string"
-            Access-Control-Allow-Credentials:
-              type: "string"
-            Access-Control-Allow-Headers:
-              type: "string"
   /{dataset}/{version}/{edition}:
     get:
       produces:
