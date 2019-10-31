@@ -5,12 +5,14 @@ environment:
   STAGE: ${self:provider.stage}
 events:
 - http:
-    path: /{key}
+    path: /{dataset}/{version}/{edition}
     method: get
     cors: true
     documentation: ${file(serverless/documentation/generate_signed_url.yaml)}
     request:
       parameters:
         paths:
-          key: true
+          dataset: true
+          version: true
+          edition: true
     authorizer: ${file(serverless/kc-authorizer.yaml)}

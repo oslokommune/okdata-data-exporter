@@ -7,3 +7,11 @@ def error_response(status, message):
         "statusCode": status,
         "body": json.dumps({"message": message}),
     }
+
+
+def response(code, body):
+    return {
+        "statusCode": code,
+        "body": body,
+        "headers": {"Access-Control-Allow-Origin": "*"},
+    }

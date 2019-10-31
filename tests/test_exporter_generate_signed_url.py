@@ -1,14 +1,48 @@
 import json
-import urllib
+from unittest.mock import patch
 
 import boto3
 from moto import mock_s3
-from unittest.mock import patch
+
+from exporter.errors import MetadataError, MetadataNotFound
 from exporter.generate_signed_url import handler
-from exporter.errors import DatasetError, DatasetNotFoundError
 
 bucket = "ok-origo-dataplatform-dev"
-base_key = "processed%2Fgreen%2Fboligpriser_historic-4owcY%2Fversion%3D1-zV86jpeY%2Fedition%3DEDITION-HAkZy%2F"
+base_key = "raw/green/befolkingsframskrivninger/version=1/edition=20191003T073102/"
+
+dataset_info = {
+    "theme": "Befolkning og samfunn",
+    "processing_stage": "raw",
+    "frequency": None,
+    "contactPoint": {
+        "name": "Byrådsavdeling for finans",
+        "email": "oslostatistikken@byr.oslo.kommune.no",
+    },
+    "Type": "Dataset",
+    "publisher": "Byrådsavdeling for finans",
+    "confidentiality": "green",
+    "keywords": ["befolkning", "framskrivning", "prognose"],
+    "objective": "Datasettet brukes som grunnlag for å generere innhold i Bydelsfakta.",
+    "description": "Befolkingsframskrivninger Kilde: Statistisk Sentralbyrå",
+    "Id": "befolkingsframskrivninger",
+    "title": "Befolkingsframskrivninger",
+    "accessRights": "public",
+    "_links": {"self": {"href": "/datasets/befolkingsframskrivninger"}},
+}
+
+edition_info = {
+    "startTime": "2019-01-01",
+    "endTime": "2030-01-01",
+    "edition": "2019-10-03T09:31:02+02:00",
+    "Id": "befolkingsframskrivninger/1/20191003T073102",
+    "description": "befolkningsframskrivninger",
+    "Type": "Edition",
+    "_links": {
+        "self": {
+            "href": "/datasets/befolkingsframskrivninger/versions/1/editions/20191003T073102"
+        }
+    },
+}
 
 
 def setup():
@@ -16,74 +50,61 @@ def setup():
         s3 = boto3.client("s3")
         s3.create_bucket(Bucket=bucket)
         for number in range(0, 10):
-            parsed_base_key = urllib.parse.unquote_plus(base_key)
+            parsed_base_key = base_key
             s3.put_object(
-                Body="contents",
-                Bucket=bucket,
-                Key="{}{}.json".format(parsed_base_key, number),
+                Body="contents", Bucket=bucket, Key=f"{parsed_base_key}{number}.json"
             )
 
 
 @mock_s3
-@patch(
-    "exporter.generate_signed_url.get_dataset",
-    return_value={"confidentiality": "green"},
-)
-def test_generate_signed_url_handler_specific_object(test_input):
+@patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
+@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+@patch("exporter.generate_signed_url.has_distributions", return_value=True)
+def test_generate_signed_url_handler_specific_object(*args):
     setup()
     result = handler(base_event, context={})
-    assert (
-        json.loads(result["body"])[0]["key"]
-        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/0.json"
-    )
+    assert json.loads(result["body"])[0]["key"] == f"{base_key}0.json"
 
 
 @mock_s3
-@patch(
-    "exporter.generate_signed_url.get_dataset",
-    return_value={"confidentiality": "green"},
-)
-def test_generate_signed_url_handler_with_prefix(test_input):
+@patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
+@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+@patch("exporter.generate_signed_url.has_distributions", return_value=True)
+def test_generate_signed_url_handler_with_prefix(*args):
     setup()
     result = handler(prefix_key_event, context={})
-    assert (
-        json.loads(result["body"])[2]["key"]
-        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"
-    )
-    assert (
-        json.loads(result["body"])[9]["key"]
-        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
-    )
+    assert json.loads(result["body"])[2]["key"] == f"{base_key}2.json"
+    assert json.loads(result["body"])[9]["key"] == f"{base_key}9.json"
 
 
 @mock_s3
 @patch(
     "exporter.generate_signed_url.get_dataset", return_value={"confidentiality": "red"}
 )
-def test_generate_signed_url_with_red_confidentiality(test_input):
+@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+@patch("auth.SimpleAuth.is_owner", return_value=False)
+@patch("exporter.generate_signed_url.has_distributions", return_value=True)
+def test_generate_signed_url_with_red_confidentiality(*args):
     setup()
     result = handler(prefix_key_event, context={})
-    assert (
-        json.loads(result["body"])[2]["key"]
-        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/2.json"
-    )
-    assert (
-        json.loads(result["body"])[9]["key"]
-        == "processed/green/boligpriser_historic-4owcY/version=1-zV86jpeY/edition=EDITION-HAkZy/9.json"
-    )
+    assert result["statusCode"] == 403
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetNotFoundError)
-def test_generate_signed_url_when_get_dataset_raise_not_found_error(test_input):
+@patch("exporter.generate_signed_url.get_metadata", side_effect=MetadataNotFound)
+@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+@patch("exporter.generate_signed_url.has_distributions", return_value=True)
+def test_generate_signed_url_when_get_dataset_raise_not_found_error(*args):
     setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 404
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", side_effect=DatasetError)
-def test_generate_signed_url_when_get_dataset_raise_dataset_error(test_input):
+@patch("exporter.generate_signed_url.get_dataset", side_effect=MetadataError)
+@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+@patch("exporter.generate_signed_url.has_distributions", return_value=True)
+def test_generate_signed_url_when_get_dataset_raise_dataset_error(*args):
     setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 400
@@ -95,7 +116,11 @@ base_event = {
     "httpMethod": "POST",
     "isBase64Encoded": True,
     "queryStringParameters": {"foo": "bar"},
-    "pathParameters": {"key": "{}{}.json".format(base_key, "0")},
+    "pathParameters": {
+        "dataset": "befolkingsframskrivninger",
+        "version": "1",
+        "edition": "20191003T073102",
+    },
     "stageVariables": {"baz": "qux"},
     "headers": {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -148,4 +173,3 @@ base_event = {
 }
 
 prefix_key_event = base_event.copy()
-prefix_key_event["pathParameters"] = {"key": "{}".format(base_key)}
