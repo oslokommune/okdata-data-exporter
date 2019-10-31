@@ -103,7 +103,7 @@ def generate_signed_url(bucket, dataset, edition):
     common_prefix = f"{processing_stage}/{confidentiality}/"
     dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
 
-    if "parent_id" in dataset:
+    if "parent_id" in dataset and dataset["parent_id"]:
         parent_id = dataset["parent_id"]
         dataset_prefix = f"{parent_id}/{dataset_prefix}"
 

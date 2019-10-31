@@ -1,23 +1,81 @@
 ---
 swagger: "2.0"
 info:
-  version: "2019-03-11T10:24:40Z"
+  version: "2019-10-31T09:31:52Z"
   title: "prod-data-exporter"
-host: "3bck00l1ng.execute-api.eu-west-1.amazonaws.com"
-basePath: "/prod"
+host: "api.data.oslo.systems"
+basePath: "/data-exporter"
 schemes:
 - "https"
 paths:
-  /{key}:
+  /remove/{dataset}/{version}/{edition}:
     get:
-      summary: "Creates a signed url for the s3 object"
-      description: "Requires s3 bucket + key"
       produces:
       - "application/json"
       parameters:
+      - name: "dataset"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        type: "string"
       - name: "key"
         in: "path"
-        description: "s3 key to export"
+        required: false
+        type: "string"
+      - name: "edition"
+        in: "path"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "200 response"
+          schema:
+            $ref: "#/definitions/exportResponse"
+        400:
+          description: "400 response"
+          schema:
+            $ref: "#/definitions/awsError"
+      security:
+      - authenticate: []
+    options:
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Credentials:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+  /{dataset}/{version}/{edition}:
+    get:
+      produces:
+      - "application/json"
+      parameters:
+      - name: "dataset"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "version"
+        in: "path"
+        required: true
+        type: "string"
+      - name: "key"
+        in: "path"
+        required: false
+        type: "string"
+      - name: "edition"
+        in: "path"
         required: true
         type: "string"
       responses:
