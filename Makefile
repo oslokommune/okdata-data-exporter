@@ -25,7 +25,7 @@ $(BUILD_VENV):
 
 .PHONY: format
 format: $(BUILD_VENV)/bin/black
-	$(BUILD_PY) -m black
+	$(BUILD_PY) -m black .
 
 .PHONY: test
 test: $(BUILD_VENV)/bin/tox
