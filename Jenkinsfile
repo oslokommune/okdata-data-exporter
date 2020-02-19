@@ -7,8 +7,7 @@ import no.ok.build.k8s.jenkins.pipeline.pipeline.*
 import no.ok.build.k8s.jenkins.pipeline.common.*
 
 String test = """
-              pip3 install tox
-              tox -p auto
+              make test BUILD_VENV=/tmp/virtualenv
               """
 String deployDev = """
                 npm install
