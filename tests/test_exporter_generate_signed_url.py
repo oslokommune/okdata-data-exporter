@@ -14,7 +14,6 @@ base_key = (
 
 dataset_info = {
     "theme": "Befolkning og samfunn",
-    "processing_stage": "raw",
     "frequency": None,
     "contactPoint": {
         "name": "Byrådsavdeling for finans",
