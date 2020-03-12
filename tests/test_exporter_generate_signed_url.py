@@ -8,7 +8,9 @@ from exporter.errors import MetadataError, MetadataNotFound
 from exporter.generate_signed_url import handler
 
 bucket = "ok-origo-dataplatform-dev"
-base_key = "raw/green/befolkingsframskrivninger/version=1/edition=20191003T073102/"
+base_key = (
+    "processed/green/befolkingsframskrivninger/version=1/edition=20191003T073102/"
+)
 
 dataset_info = {
     "theme": "Befolkning og samfunn",

@@ -97,10 +97,9 @@ def get_metadata(event, type, url):
 
 
 def generate_signed_url(bucket, dataset, edition):
-    processing_stage = dataset["processing_stage"]
     confidentiality = dataset["confidentiality"]
     (dataset_id, version, edition_id) = edition["Id"].split("/")
-    common_prefix = f"{processing_stage}/{confidentiality}/"
+    common_prefix = f"processed/{confidentiality}/"
     dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
 
     if "parent_id" in dataset and dataset["parent_id"]:
