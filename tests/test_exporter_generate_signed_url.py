@@ -1,11 +1,14 @@
 import json
 from unittest.mock import patch
 
+from aws_xray_sdk.core import xray_recorder
 import boto3
 from moto import mock_s3
 
 from exporter.errors import MetadataError, MetadataNotFound
 from exporter.generate_signed_url import handler
+
+xray_recorder.begin_segment("Test")
 
 bucket = "ok-origo-dataplatform-dev"
 base_key = (
