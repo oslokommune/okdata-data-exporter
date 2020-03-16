@@ -92,7 +92,8 @@ def get_dataset(event, dataset):
 
 
 def get_metadata(event, type, url):
-    req = SimpleAuth().poor_mans_delegation(event)
+    access_token = event["headers"]["Authorization"].split(" ")[-1]
+    req = SimpleAuth().poor_mans_delegation(access_token)
     response = req.get(url)
     if response.status_code == 404:
         raise MetadataNotFound(f"Could not find {type}")
