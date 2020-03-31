@@ -24,7 +24,7 @@ ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 patch_all()
 
 
-@logging_wrapper("data-exporter")
+@logging_wrapper
 @xray_recorder.capture("generate_signed_url")
 def handler(event, context):
     params = event["pathParameters"]
