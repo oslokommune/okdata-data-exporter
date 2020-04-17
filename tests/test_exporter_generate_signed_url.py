@@ -1,15 +1,18 @@
 import json
-from unittest.mock import patch
+import os
+import re
 
+import pytest
+import requests
+import responses
 from aws_xray_sdk.core import xray_recorder
 import boto3
 from moto import mock_s3
 
-from exporter.errors import MetadataError, MetadataNotFound
 from exporter.generate_signed_url import handler
 
 xray_recorder.begin_segment("Test")
-
+metadata_api = re.compile(os.environ["METADATA_API"] + "/.*")
 bucket = "ok-origo-dataplatform-dev"
 base_key = (
     "processed/green/befolkingsframskrivninger/version=1/edition=20191003T073102/"
@@ -60,21 +63,22 @@ def setup():
             )
 
 
+@pytest.fixture
+def mock_gets(mocker):
+    mocker.patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
+    mocker.patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+    mocker.patch("exporter.generate_signed_url.has_distributions", return_value=True)
+
+
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
-@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-@patch("exporter.generate_signed_url.has_distributions", return_value=True)
-def test_generate_signed_url_handler_specific_object(*args):
+def test_generate_signed_url_handler_specific_object(mock_gets):
     setup()
     result = handler(base_event, context={})
     assert json.loads(result["body"])[0]["key"] == f"{base_key}0.json"
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
-@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-@patch("exporter.generate_signed_url.has_distributions", return_value=True)
-def test_generate_signed_url_handler_with_prefix(*args):
+def test_generate_signed_url_handler_with_prefix(mock_gets):
     setup()
     result = handler(prefix_key_event, context={})
     assert json.loads(result["body"])[2]["key"] == f"{base_key}2.json"
@@ -82,36 +86,56 @@ def test_generate_signed_url_handler_with_prefix(*args):
 
 
 @mock_s3
-@patch(
-    "exporter.generate_signed_url.get_dataset", return_value={"confidentiality": "red"}
-)
-@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-@patch("auth.SimpleAuth.is_owner", return_value=False)
-@patch("exporter.generate_signed_url.has_distributions", return_value=True)
-def test_generate_signed_url_with_red_confidentiality(*args):
+def test_generate_signed_url_with_red_confidentiality(mocker):
+    mocker.patch(
+        "exporter.generate_signed_url.get_dataset",
+        return_value={"confidentiality": "red"},
+    )
+    mocker.patch("auth.SimpleAuth.is_owner", return_value=False)
+    mocker.patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
+    mocker.patch("exporter.generate_signed_url.has_distributions", return_value=True)
     setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 403
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_metadata", side_effect=MetadataNotFound)
-@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-@patch("exporter.generate_signed_url.has_distributions", return_value=True)
-def test_generate_signed_url_when_get_dataset_raise_not_found_error(*args):
+@responses.activate
+def test_generate_signed_url_when_get_dataset_metadata_404_error(mocker):
+    mocker.patch(
+        "auth.SimpleAuth.poor_mans_delegation", return_value=requests.Session()
+    )
+    responses.add(
+        responses.GET,
+        metadata_api,
+        body='{"error": "not found"}',
+        status=404,
+        content_type="application/json",
+    )
     setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 404
+    assert json.loads(result["body"])["message"] == {"error": "not found"}
 
 
 @mock_s3
-@patch("exporter.generate_signed_url.get_dataset", side_effect=MetadataError)
-@patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-@patch("exporter.generate_signed_url.has_distributions", return_value=True)
-def test_generate_signed_url_when_get_dataset_raise_dataset_error(*args):
+@responses.activate
+def test_generate_signed_url_when_get_dataset_metadata_500_error(mocker):
+    mocker.patch(
+        "auth.SimpleAuth.poor_mans_delegation", return_value=requests.Session()
+    )
+    responses.add(
+        responses.GET,
+        metadata_api,
+        body='{"error": "internal error"}',
+        status=500,
+        content_type="application/json",
+    )
+
     setup()
     result = handler(prefix_key_event, context={})
-    assert result["statusCode"] == 400
+    assert result["statusCode"] == 500
+    assert json.loads(result["body"])["message"] == {"error": "internal error"}
 
 
 base_event = {
