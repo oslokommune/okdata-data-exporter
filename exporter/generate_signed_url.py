@@ -10,11 +10,8 @@ from dataplatform.awslambda.logging import (
 )
 
 from auth import SimpleAuth
-from exporter.errors import (
-    MetadataNotFound,
-    DatasetNotFound,
-    EditionNotFound,
-)
+from requests import HTTPError
+
 from exporter.common import error_response, response
 
 BUCKET = os.environ["BUCKET"]
@@ -40,15 +37,12 @@ def handler(event, context):
         edition_info = get_edition(event, dataset, version, edition)
 
         log_add(dataset_info=dataset_info)
-    except DatasetNotFound as e:
+    except HTTPError as e:
         log_exception(e)
-        return error_response(404, "Could not find dataset")
-    except EditionNotFound as e:
-        log_exception(e)
-        return error_response(404, "Could not find version/edition")
+        return error_response(e.response.status_code, e.response.json())
     except Exception as e:
         log_exception(e)
-        return error_response(400, "Could not complete request, please try again later")
+        return error_response(500, "Could not complete request, please try again later")
 
     if not has_distributions(event, edition_info):
         return response(404, f"Missing data for {edition_info['Id']}")
@@ -77,27 +71,21 @@ def has_distributions(event, edition):
 
 def get_edition(event, dataset, version, edition):
     url = f"{METADATA_API}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    try:
-        return get_metadata(event, "edition", url)
-    except MetadataNotFound:
-        raise EditionNotFound
+    return get_metadata(event, "edition", url)
 
 
 def get_dataset(event, dataset):
     url = f"{METADATA_API}/datasets/{dataset}"
-    try:
-        return get_metadata(event, "dataset", url)
-    except MetadataNotFound:
-        raise DatasetNotFound
+    return get_metadata(event, "dataset", url)
 
 
 def get_metadata(event, type, url):
     access_token = event["headers"]["Authorization"].split(" ")[-1]
     req = SimpleAuth().poor_mans_delegation(access_token)
     response = req.get(url)
-    if response.status_code == 404:
-        raise MetadataNotFound(f"Could not find {type}")
     if response.status_code != 200:
+        log_add(metadata_error_code=response.status_code)
+        log_add(metadata_url=url)
         response.raise_for_status()
     data = response.json()
     return data
