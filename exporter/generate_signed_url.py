@@ -45,7 +45,7 @@ def handler(event, context):
         return error_response(500, "Could not complete request, please try again later")
 
     if not has_distributions(event, edition_info):
-        return response(404, f"Missing data for {edition_info['Id']}")
+        return error_response(404, f"Missing data for {edition_info['Id']}")
 
     # Anyone with a logged in user can download green datasets
     if dataset_info["confidentiality"] == "green":
