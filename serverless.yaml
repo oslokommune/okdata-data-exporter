@@ -25,7 +25,7 @@ provider:
     KEYCLOAK_SERVER: ${ssm:/keycloak/client/server}
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
-    CLIENT_SECRET: ${ssm:/dataplatform/apis/data-uploader/auth/client_secret~true}
+    CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret~true}
     SERVICE_NAME: ${self:service}
 
 plugins:
