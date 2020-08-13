@@ -12,7 +12,7 @@ from moto import mock_s3
 from exporter.generate_signed_url import handler
 
 xray_recorder.begin_segment("Test")
-metadata_api = re.compile(os.environ["METADATA_API"] + "/.*")
+metadata_api = re.compile(os.environ["METADATA_API_URL"] + "/.*")
 bucket = "ok-origo-dataplatform-dev"
 base_key = (
     "processed/green/befolkingsframskrivninger/version=1/edition=20191003T073102/"

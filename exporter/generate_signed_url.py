@@ -15,7 +15,7 @@ from requests import HTTPError
 from exporter.common import error_response, response
 
 BUCKET = os.environ["BUCKET"]
-METADATA_API = os.environ.get("METADATA_API")
+METADATA_API_URL = os.environ.get("METADATA_API_URL")
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 patch_all()
@@ -64,18 +64,18 @@ def handler(event, context):
 
 
 def has_distributions(event, edition):
-    url = f"{METADATA_API}{edition['_links']['self']['href']}/distributions"
+    url = f"{METADATA_API_URL}{edition['_links']['self']['href']}/distributions"
     distributions = get_metadata(event, "distributions", url)
     return bool(distributions)
 
 
 def get_edition(event, dataset, version, edition):
-    url = f"{METADATA_API}/datasets/{dataset}/versions/{version}/editions/{edition}"
+    url = f"{METADATA_API_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
     return get_metadata(event, "edition", url)
 
 
 def get_dataset(event, dataset):
-    url = f"{METADATA_API}/datasets/{dataset}"
+    url = f"{METADATA_API_URL}/datasets/{dataset}"
     return get_metadata(event, "dataset", url)
 
 
