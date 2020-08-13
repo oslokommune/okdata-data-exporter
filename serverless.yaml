@@ -22,7 +22,7 @@ provider:
     METADATA_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/metadata
     AUTHORIZER_API: ${ssm:/dataplatform/shared/api-gateway-url}/simple-dataset-authorizer
     ENABLE_AUTH: true
-    KEYCLOAK_SERVER: ${ssm:/keycloak/client/server}
+    KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
     CLIENT_ID: data-uploader
     CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret~true}
@@ -51,7 +51,7 @@ functions:
 
 custom:
   esLogs:
-    endpoint: ${ssm:/dataplatform/elasticsearch/endpoint}
+    endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
     index: dataplatform-services
     filterPattern: '{ $.function_name = "*" }'
   documentation:
