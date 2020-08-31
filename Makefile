@@ -36,12 +36,12 @@ upgrade-deps: $(BUILD_VENV)/bin/pip-compile
 	$(BUILD_VENV)/bin/pip-compile -U
 
 .PHONY: deploy
-deploy: node_modules test login-dev
+deploy: init test login-dev
 	@echo "\nDeploying to stage: $${STAGE:-dev}\n"
 	sls deploy --stage $${STAGE:-dev} --aws-profile $(.DEV_PROFILE)
 
 .PHONY: deploy-prod
-deploy-prod: node_modules is-git-clean test login-prod
+deploy-prod: init format is-git-clean test login-prod
 	sls deploy --stage prod --aws-profile $(.PROD_PROFILE)
 
 ifeq ($(MAKECMDGOALS),undeploy)
