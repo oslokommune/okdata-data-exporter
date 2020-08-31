@@ -74,15 +74,6 @@ is-git-clean:
 		false; \
 	fi
 
-.PHONY: build
-build: $(BUILD_VENV)/bin/wheel $(BUILD_VENV)/bin/twine
-	$(BUILD_PY) setup.py sdist bdist_wheel
-
-.PHONY: jenkins-bump-patch
-jenkins-bump-patch: $(BUILD_VENV)/bin/bump2version is-git-clean
-	$(BUILD_VENV)/bin/bump2version patch
-	git push origin HEAD:${BRANCH_NAME}
-
 
 ###
 # Python build dependencies
