@@ -3,13 +3,13 @@ import os
 import re
 
 import pytest
-import requests
 import responses
+import requests
 from aws_xray_sdk.core import xray_recorder
 import boto3
 from moto import mock_s3
 
-from exporter.generate_signed_url import handler
+from exporter.generate_signed_url import handler, AuthorizedRequests
 
 xray_recorder.begin_segment("Test")
 metadata_api = re.compile(os.environ["METADATA_API_URL"] + "/.*")
@@ -52,90 +52,112 @@ edition_info = {
 }
 
 
-def setup():
+@pytest.fixture(autouse=True)
+def mock_aws():
     with mock_s3():
         s3 = boto3.client("s3")
-        s3.create_bucket(Bucket=bucket)
+        s3.create_bucket(
+            Bucket=bucket,
+            CreateBucketConfiguration={
+                "LocationConstraint": "eu-west-1",
+            },
+        )
         for number in range(0, 10):
             parsed_base_key = base_key
             s3.put_object(
                 Body="contents", Bucket=bucket, Key=f"{parsed_base_key}{number}.json"
             )
+        yield s3
 
 
 @pytest.fixture
 def mock_gets(mocker):
-    mocker.patch("exporter.generate_signed_url.get_dataset", return_value=dataset_info)
-    mocker.patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-    mocker.patch("exporter.generate_signed_url.has_distributions", return_value=True)
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.get_dataset",
+        return_value=dataset_info,
+    )
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.get_edition",
+        return_value=edition_info,
+    )
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.has_distributions",
+        return_value=True,
+    )
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.is_dataset_owner",
+        return_value=True,
+    )
 
 
-@mock_s3
 def test_generate_signed_url_handler_specific_object(mock_gets):
-    setup()
     result = handler(base_event, context={})
     assert json.loads(result["body"])[0]["key"] == f"{base_key}0.json"
 
 
-@mock_s3
 def test_generate_signed_url_handler_with_prefix(mock_gets):
-    setup()
     result = handler(prefix_key_event, context={})
     assert json.loads(result["body"])[2]["key"] == f"{base_key}2.json"
     assert json.loads(result["body"])[9]["key"] == f"{base_key}9.json"
 
 
-@mock_s3
 def test_generate_signed_url_with_red_confidentiality(mocker):
     mocker.patch(
-        "exporter.generate_signed_url.get_dataset",
+        "exporter.generate_signed_url.AuthorizedRequests.get_dataset",
         return_value={"confidentiality": "red"},
     )
-    mocker.patch("auth.SimpleAuth.is_owner", return_value=False)
-    mocker.patch("exporter.generate_signed_url.get_edition", return_value=edition_info)
-    mocker.patch("exporter.generate_signed_url.has_distributions", return_value=True)
-    setup()
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.get_edition",
+        return_value=edition_info,
+    )
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.has_distributions",
+        return_value=True,
+    )
+    mocker.patch(
+        "exporter.generate_signed_url.AuthorizedRequests.is_dataset_owner",
+        return_value=False,
+    )
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 403
 
 
-@mock_s3
 @responses.activate
-def test_generate_signed_url_when_get_dataset_metadata_404_error(mocker):
-    mocker.patch(
-        "auth.SimpleAuth.poor_mans_delegation", return_value=requests.Session()
-    )
+def test_generate_signed_url_when_get_dataset_metadata_404_error():
     responses.add(
         responses.GET,
         metadata_api,
-        body='{"error": "not found"}',
+        json={"error": "not found"},
         status=404,
         content_type="application/json",
     )
-    setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 404
     assert json.loads(result["body"])["message"] == {"error": "not found"}
 
 
-@mock_s3
 @responses.activate
-def test_generate_signed_url_when_get_dataset_metadata_500_error(mocker):
-    mocker.patch(
-        "auth.SimpleAuth.poor_mans_delegation", return_value=requests.Session()
-    )
+def test_generate_signed_url_when_get_dataset_metadata_500_error():
     responses.add(
         responses.GET,
         metadata_api,
-        body='{"error": "internal error"}',
+        json={"error": "internal error"},
         status=500,
         content_type="application/json",
     )
 
-    setup()
     result = handler(prefix_key_event, context={})
     assert result["statusCode"] == 500
     assert json.loads(result["body"])["message"] == {"error": "internal error"}
+
+
+def test_authorization_header(mocker):
+    mocker.patch("requests.get")
+    ar = AuthorizedRequests("foobar")
+    ar._get("https://example.com")
+    requests.get.assert_called_once_with(
+        "https://example.com", headers={"Authorization": "Bearer foobar"}
+    )
 
 
 base_event = {
@@ -169,7 +191,7 @@ base_event = {
         "X-Forwarded-For": "127.0.0.1, 127.0.0.2",
         "X-Forwarded-Port": "443",
         "X-Forwarded-Proto": "https",
-        "Authorization": "token",
+        "Authorization": "Bearer blippblopp",
     },
     "requestContext": {
         "accountId": "123456789012",

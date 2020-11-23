@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+import requests
 
 from aws_xray_sdk.core import patch_all, xray_recorder
 from dataplatform.awslambda.logging import (
@@ -9,7 +10,6 @@ from dataplatform.awslambda.logging import (
     log_exception,
 )
 
-from auth import SimpleAuth
 from requests import HTTPError
 
 from exporter.common import error_response, response
@@ -17,6 +17,7 @@ from exporter.common import error_response, response
 BUCKET = os.environ["BUCKET"]
 METADATA_API_URL = os.environ.get("METADATA_API_URL")
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
+AUTHORIZER_API = os.environ["AUTHORIZER_API"]
 
 patch_all()
 
@@ -32,9 +33,13 @@ def handler(event, context):
     edition = params["edition"]
     log_add(dataset_edition=edition)
 
+    auth_requests = AuthorizedRequests.from_event(event)
+    if not auth_requests:
+        return error_response(403, "Forbidden")
+
     try:
-        dataset_info = get_dataset(event, dataset)
-        edition_info = get_edition(event, dataset, version, edition)
+        dataset_info = auth_requests.get_dataset(dataset)
+        edition_info = auth_requests.get_edition(dataset, version, edition)
 
         log_add(dataset_info=dataset_info)
     except HTTPError as e:
@@ -44,7 +49,7 @@ def handler(event, context):
         log_exception(e)
         return error_response(500, "Could not complete request, please try again later")
 
-    if not has_distributions(event, edition_info):
+    if not auth_requests.has_distributions(edition_info):
         return error_response(404, f"Missing data for {edition_info['Id']}")
 
     # Anyone with a logged in user can download green datasets
@@ -55,7 +60,7 @@ def handler(event, context):
         return response(200, json.dumps(signed_url))
 
     # Only owner can download non-green datasets
-    if ENABLE_AUTH and not SimpleAuth().is_owner(event, dataset):
+    if ENABLE_AUTH and not auth_requests.is_dataset_owner(dataset):
         log_add(is_owner=False)
         return error_response(403, "Forbidden")
 
@@ -63,32 +68,55 @@ def handler(event, context):
     return response(200, json.dumps(signed_url))
 
 
-def has_distributions(event, edition):
-    url = f"{METADATA_API_URL}{edition['_links']['self']['href']}/distributions"
-    distributions = get_metadata(event, "distributions", url)
-    return bool(distributions)
+class AuthorizedRequests:
+    def __init__(self, access_token):
+        self.access_token = access_token
 
+    @classmethod
+    def from_event(cls, event):
+        try:
+            auth_type, access_token = event["headers"]["Authorization"].split(" ")
+            if auth_type.lower() == "bearer":
+                return cls(access_token)
+            raise ValueError(f'Expected auth type "Bearer", got "{auth_type}"')
+        except ValueError as e:
+            log_exception(e)
+        return None
 
-def get_edition(event, dataset, version, edition):
-    url = f"{METADATA_API_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
-    return get_metadata(event, "edition", url)
+    def _get(self, url):
+        return requests.get(
+            url, headers={"Authorization": f"Bearer {self.access_token}"}
+        )
 
+    def _get_metadata(self, url):
+        response = self._get(url)
+        if response.status_code != 200:
+            log_add(metadata_error_code=response.status_code)
+            log_add(metadata_url=url)
+            response.raise_for_status()
+        data = response.json()
+        return data
 
-def get_dataset(event, dataset):
-    url = f"{METADATA_API_URL}/datasets/{dataset}"
-    return get_metadata(event, "dataset", url)
+    def has_distributions(self, edition):
+        url = f"{METADATA_API_URL}{edition['_links']['self']['href']}/distributions"
+        distributions = self._get_metadata(url)
+        return bool(distributions)
 
+    def get_edition(self, dataset, version, edition):
+        url = f"{METADATA_API_URL}/datasets/{dataset}/versions/{version}/editions/{edition}"
+        return self._get_metadata(url)
 
-def get_metadata(event, type, url):
-    access_token = event["headers"]["Authorization"].split(" ")[-1]
-    req = SimpleAuth().poor_mans_delegation(access_token)
-    response = req.get(url)
-    if response.status_code != 200:
-        log_add(metadata_error_code=response.status_code)
-        log_add(metadata_url=url)
-        response.raise_for_status()
-    data = response.json()
-    return data
+    def get_dataset(self, dataset):
+        url = f"{METADATA_API_URL}/datasets/{dataset}"
+        return self._get_metadata(url)
+
+    def is_dataset_owner(self, dataset_id):
+        result = self._get(
+            f"{AUTHORIZER_API}/{dataset_id}",
+        )
+        result.raise_for_status()
+        data = result.json()
+        return "access" in data and data["access"]
 
 
 def generate_signed_url(bucket, dataset, edition):

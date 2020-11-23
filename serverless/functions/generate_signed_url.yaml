@@ -1,6 +1,4 @@
 handler: exporter.generate_signed_url.handler
-layers:
-  - ${ssm:/dataplatform/shared/python-base-layer-arn}
 environment:
   STAGE: ${self:provider.stage}
 events:
