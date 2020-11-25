@@ -46,7 +46,7 @@ edition_info = {
     "Type": "Edition",
     "_links": {
         "self": {
-            "href": "/datasets/befolkingsframskrivninger/versions/1/editions/20191003T073102"
+            "href": f"{os.environ['METADATA_API_URL']}/metadata/datasets/befolkingsframskrivninger/versions/1/editions/20191003T073102"
         }
     },
 }
@@ -58,9 +58,7 @@ def mock_aws():
         s3 = boto3.client("s3")
         s3.create_bucket(
             Bucket=bucket,
-            CreateBucketConfiguration={
-                "LocationConstraint": "eu-west-1",
-            },
+            CreateBucketConfiguration={"LocationConstraint": "eu-west-1"},
         )
         for number in range(0, 10):
             parsed_base_key = base_key
