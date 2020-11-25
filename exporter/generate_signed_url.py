@@ -98,7 +98,7 @@ class AuthorizedRequests:
         return data
 
     def has_distributions(self, edition):
-        url = f"{METADATA_API_URL}{edition['_links']['self']['href']}/distributions"
+        url = f"{edition['_links']['self']['href']}/distributions"
         distributions = self._get_metadata(url)
         return bool(distributions)
 
