@@ -33,6 +33,7 @@ plugins:
   - serverless-pseudo-parameters
   - serverless-plugin-git-variables
   - serverless-es-logs
+  - serverless-python-requirements
 
 resources:
   Description: >
@@ -50,6 +51,9 @@ functions:
   generate_signed_url: ${file(serverless/functions/generate_signed_url.yaml)}
 
 custom:
+  pythonRequirements:
+    dockerizePip: non-linux
+    usePoetry: false
   esLogs:
     endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
     index: dataplatform-services
