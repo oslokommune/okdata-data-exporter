@@ -9,7 +9,8 @@ from aws_xray_sdk.core import xray_recorder
 import boto3
 from moto import mock_s3
 
-from exporter.generate_signed_url import handler, AuthorizedRequests
+from exporter.common import APIClient
+from exporter.handlers import generate_signed_url
 
 xray_recorder.begin_segment("Test")
 metadata_api = re.compile(os.environ["METADATA_API_URL"] + "/.*")
@@ -70,52 +71,52 @@ def mock_aws():
 @pytest.fixture
 def mock_gets(mocker):
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.get_dataset",
+        "exporter.common.APIClient.get_dataset",
         return_value=dataset_info,
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.get_edition",
+        "exporter.common.APIClient.get_edition",
         return_value=edition_info,
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.has_distributions",
+        "exporter.common.APIClient.has_distributions",
         return_value=True,
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.is_dataset_owner",
+        "exporter.common.APIClient.is_dataset_owner",
         return_value=True,
     )
 
 
 def test_generate_signed_url_handler_specific_object(mock_gets):
-    result = handler(base_event, context={})
+    result = generate_signed_url(base_event, context={})
     assert json.loads(result["body"])[0]["key"] == f"{base_key}0.json"
 
 
 def test_generate_signed_url_handler_with_prefix(mock_gets):
-    result = handler(prefix_key_event, context={})
+    result = generate_signed_url(prefix_key_event, context={})
     assert json.loads(result["body"])[2]["key"] == f"{base_key}2.json"
     assert json.loads(result["body"])[9]["key"] == f"{base_key}9.json"
 
 
 def test_generate_signed_url_with_non_public_access_rights(mocker):
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.get_dataset",
+        "exporter.common.APIClient.get_dataset",
         return_value={"accessRights": "non-public"},
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.get_edition",
+        "exporter.common.APIClient.get_edition",
         return_value=edition_info,
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.has_distributions",
+        "exporter.common.APIClient.has_distributions",
         return_value=True,
     )
     mocker.patch(
-        "exporter.generate_signed_url.AuthorizedRequests.is_dataset_owner",
+        "exporter.common.APIClient.is_dataset_owner",
         return_value=False,
     )
-    result = handler(prefix_key_event, context={})
+    result = generate_signed_url(prefix_key_event, context={})
     assert result["statusCode"] == 403
 
 
@@ -128,7 +129,7 @@ def test_generate_signed_url_when_get_dataset_metadata_404_error():
         status=404,
         content_type="application/json",
     )
-    result = handler(prefix_key_event, context={})
+    result = generate_signed_url(prefix_key_event, context={})
     assert result["statusCode"] == 404
     assert json.loads(result["body"])["message"] == {"error": "not found"}
 
@@ -143,15 +144,15 @@ def test_generate_signed_url_when_get_dataset_metadata_500_error():
         content_type="application/json",
     )
 
-    result = handler(prefix_key_event, context={})
+    result = generate_signed_url(prefix_key_event, context={})
     assert result["statusCode"] == 500
     assert json.loads(result["body"])["message"] == {"error": "internal error"}
 
 
 def test_authorization_header(mocker):
     mocker.patch("requests.get")
-    ar = AuthorizedRequests("foobar")
-    ar._get("https://example.com")
+    client = APIClient("foobar")
+    client._get("https://example.com")
     requests.get.assert_called_once_with(
         "https://example.com", headers={"Authorization": "Bearer foobar"}
     )
