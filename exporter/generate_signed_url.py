@@ -6,7 +6,7 @@ import requests
 from aws_xray_sdk.core import patch_all, xray_recorder
 from okdata.aws.logging import log_add, log_exception, logging_wrapper
 
-from exporter.common import error_response, response
+from exporter.common import CONFIDENTIALITY_MAP, error_response, response
 
 BUCKET = os.environ["BUCKET"]
 METADATA_API_URL = os.environ.get("METADATA_API_URL")
@@ -46,8 +46,8 @@ def handler(event, context):
     if not auth_requests.has_distributions(edition_info):
         return error_response(404, f"Missing data for {edition_info['Id']}")
 
-    # Anyone with a logged in user can download green datasets
-    if dataset_info["confidentiality"] == "green":
+    # Anyone with a logged in user can download public (green) datasets
+    if dataset_info["accessRights"] == "public":
         signed_url = generate_signed_url(
             BUCKET, edition=edition_info, dataset=dataset_info
         )
@@ -114,9 +114,10 @@ class AuthorizedRequests:
 
 
 def generate_signed_url(bucket, dataset, edition):
-    confidentiality = dataset["confidentiality"]
-    log_add(dataset_confidentiality=confidentiality)
+    access_rights = dataset["accessRights"]
+    log_add(dataset_access_rights=access_rights)
     (dataset_id, version, edition_id) = edition["Id"].split("/")
+    confidentiality = CONFIDENTIALITY_MAP[access_rights]
     common_prefix = f"processed/{confidentiality}/"
     dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
 
