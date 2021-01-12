@@ -1,16 +1,10 @@
 import json
 import os
+
 import boto3
 import requests
-
 from aws_xray_sdk.core import patch_all, xray_recorder
-from dataplatform.awslambda.logging import (
-    logging_wrapper,
-    log_add,
-    log_exception,
-)
-
-from requests import HTTPError
+from okdata.aws.logging import log_add, log_exception, logging_wrapper
 
 from exporter.common import error_response, response
 
@@ -42,7 +36,7 @@ def handler(event, context):
         edition_info = auth_requests.get_edition(dataset, version, edition)
 
         log_add(dataset_info=dataset_info)
-    except HTTPError as e:
+    except requests.HTTPError as e:
         log_exception(e)
         return error_response(e.response.status_code, e.response.json())
     except Exception as e:
