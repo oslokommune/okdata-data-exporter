@@ -1,5 +1,11 @@
 import json
 
+CONFIDENTIALITY_MAP = {
+    "public": "green",
+    "restricted": "yellow",
+    "non-public": "red",
+}
+
 
 def error_response(status, message):
     return {

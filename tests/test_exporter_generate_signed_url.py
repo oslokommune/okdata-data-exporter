@@ -27,7 +27,6 @@ dataset_info = {
     },
     "Type": "Dataset",
     "publisher": "Byrådsavdeling for finans",
-    "confidentiality": "green",
     "keywords": ["befolkning", "framskrivning", "prognose"],
     "objective": "Datasettet brukes som grunnlag for å generere innhold i Bydelsfakta.",
     "description": "Befolkingsframskrivninger Kilde: Statistisk Sentralbyrå",
@@ -99,10 +98,10 @@ def test_generate_signed_url_handler_with_prefix(mock_gets):
     assert json.loads(result["body"])[9]["key"] == f"{base_key}9.json"
 
 
-def test_generate_signed_url_with_red_confidentiality(mocker):
+def test_generate_signed_url_with_non_public_access_rights(mocker):
     mocker.patch(
         "exporter.generate_signed_url.AuthorizedRequests.get_dataset",
-        return_value={"confidentiality": "red"},
+        return_value={"accessRights": "non-public"},
     )
     mocker.patch(
         "exporter.generate_signed_url.AuthorizedRequests.get_edition",
