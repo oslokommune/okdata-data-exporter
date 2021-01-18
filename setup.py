@@ -15,9 +15,9 @@ setuptools.setup(
     url="https://github.oslo.kommune.no/origo-dataplatform/data-exporter",
     packages=setuptools.find_packages(),
     install_requires=[
-        "boto3",
         "aws-xray-sdk",
+        "boto3",
+        "okdata-aws",
         "requests",
-        "dataplatform-common-python==0.2.2",
     ],
 )
