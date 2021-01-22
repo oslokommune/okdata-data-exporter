@@ -46,9 +46,7 @@ class APIClient:
             log_exception(e)
         return None
 
-    def _get(self, url):
-        kwargs = {}
-
+    def _get(self, url, **kwargs):
         if self.access_token:
             kwargs["headers"] = {"Authorization": f"Bearer {self.access_token}"}
 
