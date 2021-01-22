@@ -89,9 +89,9 @@ def generate_signed_urls(bucket, dataset, edition):
     dataset_id, version, edition_id = edition["Id"].split("/")
     confidentiality = CONFIDENTIALITY_MAP[access_rights]
     common_prefix = f"processed/{confidentiality}/"
-    dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
-
     parent_id = dataset.get("parent_id")
+
+    dataset_prefix = f"{dataset_id}/version={version}/edition={edition_id}/"
     if parent_id:
         dataset_prefix = f"{parent_id}/{dataset_prefix}"
 
