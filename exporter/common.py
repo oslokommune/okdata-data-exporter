@@ -55,8 +55,7 @@ class APIClient:
     def _get_metadata(self, url):
         response = self._get(url)
         if response.status_code != 200:
-            log_add(metadata_error_code=response.status_code)
-            log_add(metadata_url=url)
+            log_add(metadata_error_code=response.status_code, metadata_url=url)
             response.raise_for_status()
         data = response.json()
         return data
@@ -85,7 +84,6 @@ class APIClient:
 
 def generate_signed_urls(bucket, dataset, edition):
     access_rights = dataset["accessRights"]
-    log_add(dataset_access_rights=access_rights)
     dataset_id, version, edition_id = edition["Id"].split("/")
     confidentiality = CONFIDENTIALITY_MAP[access_rights]
     common_prefix = f"processed/{confidentiality}/"
@@ -97,10 +95,14 @@ def generate_signed_urls(bucket, dataset, edition):
 
     prefix = common_prefix + dataset_prefix
 
+    log_add(
+        dataset_access_rights=access_rights,
+        s3_bucket=bucket,
+        s3_prefix=prefix,
+    )
+
     session = boto3.Session()
     s3 = session.client("s3")
-    log_add(s3_bucket=bucket)
-    log_add(s3_prefix=prefix)
     resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
     signed_urls = [
