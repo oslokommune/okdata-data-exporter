@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from copy import deepcopy
 
 import pytest
 import responses
@@ -10,7 +11,7 @@ import boto3
 from moto import mock_s3
 
 from exporter.common import APIClient
-from exporter.handlers import generate_signed_url
+from exporter.handlers import generate_signed_url, generate_signed_url_public
 
 xray_recorder.begin_segment("Test")
 metadata_api = re.compile(os.environ["METADATA_API_URL"] + "/.*")
@@ -147,6 +148,29 @@ def test_generate_signed_url_when_get_dataset_metadata_500_error():
     result = generate_signed_url(prefix_key_event, context={})
     assert result["statusCode"] == 500
     assert json.loads(result["body"])["message"] == {"error": "internal error"}
+
+
+def test_generate_signed_url_public_with_public_dataset(mock_gets):
+    event = deepcopy(base_event)
+    # No need to authorize for the public endpoint
+    del event["headers"]["Authorization"]
+    result = generate_signed_url_public(event, context={})
+    assert result["statusCode"] == 200
+    assert json.loads(result["body"])[0]["key"] == f"{base_key}0.json"
+
+
+@pytest.mark.parametrize("access_rights", ["restricted", "non-public"])
+def test_generate_signed_url_public_with_non_public_dataset(
+    mocker, mock_gets, access_rights
+):
+    mocker.patch(
+        "exporter.common.APIClient.get_dataset",
+        return_value={"accessRights": access_rights},
+    )
+    event = deepcopy(base_event)
+    del event["headers"]["Authorization"]
+    result = generate_signed_url_public(event, context={})
+    assert result["statusCode"] == 403
 
 
 def test_authorization_header(mocker):
