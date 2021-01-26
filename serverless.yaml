@@ -48,6 +48,7 @@ package:
     - exporter/**
 
 functions:
+  generate-signed-url-public: ${file(serverless/functions/generate_signed_url_public.yaml)}
   generate_signed_url: ${file(serverless/functions/generate_signed_url.yaml)}
 
 custom:

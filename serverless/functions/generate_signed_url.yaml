@@ -1,4 +1,4 @@
-handler: exporter.generate_signed_url.handler
+handler: exporter.handlers.generate_signed_url
 environment:
   STAGE: ${self:provider.stage}
 events:
