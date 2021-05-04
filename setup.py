@@ -18,6 +18,7 @@ setuptools.setup(
         "aws-xray-sdk",
         "boto3",
         "okdata-aws",
+        "okdata-resource-auth",
         "requests",
     ],
 )

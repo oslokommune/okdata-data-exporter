@@ -1,10 +1,11 @@
 import json
 import os
 
-
 import requests
 from aws_xray_sdk.core import patch_all, xray_recorder
+
 from okdata.aws.logging import log_add, log_exception, logging_wrapper
+from okdata.resource_auth import ResourceAuthorizer
 
 from exporter.common import (
     APIClient,
@@ -17,6 +18,8 @@ BUCKET = os.environ["BUCKET"]
 ENABLE_AUTH = os.environ.get("ENABLE_AUTH", "false") == "true"
 
 patch_all()
+
+resource_authorizer = ResourceAuthorizer()
 
 
 def _dataset_components_from_event(event):
@@ -49,13 +52,17 @@ def generate_signed_url(event, context):
     if not client.has_distributions(edition):
         return error_response(404, f"Missing data for {edition['Id']}")
 
-    # Only owner can download non-public datasets.
+    # Only users with read access download non-public datasets.
     if (
         dataset["accessRights"] != "public"
         and ENABLE_AUTH
-        and not client.is_dataset_owner(dataset_id)
+        and not resource_authorizer.has_access(
+            client.access_token,
+            scope="okdata:dataset:read",
+            resource_name=f"okdata:dataset:{dataset_id}",
+        )
     ):
-        log_add(is_owner=False)
+        log_add(has_access=False)
         return error_response(403, "Forbidden")
 
     signed_urls = generate_signed_urls(BUCKET, edition=edition, dataset=dataset)

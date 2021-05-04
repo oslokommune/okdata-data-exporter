@@ -20,10 +20,10 @@ provider:
     GIT_REV: ${git:branch}:${git:sha1}
     BUCKET: "ok-origo-dataplatform-${self:provider.stage}"
     METADATA_API_URL: ${ssm:/dataplatform/shared/api-gateway-url}/metadata
-    AUTHORIZER_API: ${ssm:/dataplatform/shared/api-gateway-url}/simple-dataset-authorizer
     ENABLE_AUTH: true
     KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
+    RESOURCE_SERVER_CLIENT_ID: okdata-resource-server
     CLIENT_ID: data-uploader
     CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret~true}
     SERVICE_NAME: ${self:service}

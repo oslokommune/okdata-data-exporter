@@ -3,9 +3,9 @@ import os
 
 import boto3
 import requests
+
 from okdata.aws.logging import log_add, log_exception
 
-AUTHORIZER_API = os.environ["AUTHORIZER_API"]
 METADATA_API_URL = os.environ["METADATA_API_URL"]
 
 CONFIDENTIALITY_MAP = {
@@ -72,14 +72,6 @@ class APIClient:
     def get_dataset(self, dataset):
         url = f"{METADATA_API_URL}/datasets/{dataset}"
         return self._get_metadata(url)
-
-    def is_dataset_owner(self, dataset_id):
-        result = self._get(
-            f"{AUTHORIZER_API}/{dataset_id}",
-        )
-        result.raise_for_status()
-        data = result.json()
-        return data.get("access", False)
 
 
 def generate_signed_urls(bucket, dataset, edition):

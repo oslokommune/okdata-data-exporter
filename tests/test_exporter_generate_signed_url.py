@@ -83,10 +83,6 @@ def mock_gets(mocker):
         "exporter.common.APIClient.has_distributions",
         return_value=True,
     )
-    mocker.patch(
-        "exporter.common.APIClient.is_dataset_owner",
-        return_value=True,
-    )
 
 
 def test_generate_signed_url_handler_specific_object(mock_gets):
@@ -113,11 +109,17 @@ def test_generate_signed_url_with_non_public_access_rights(mocker):
         "exporter.common.APIClient.has_distributions",
         return_value=True,
     )
-    mocker.patch(
-        "exporter.common.APIClient.is_dataset_owner",
+    resource_auth_mock = mocker.patch(
+        "okdata.resource_auth.ResourceAuthorizer.has_access",
         return_value=False,
     )
+
     result = generate_signed_url(prefix_key_event, context={})
+    resource_auth_mock.assert_called_once_with(
+        "blippblopp",
+        scope="okdata:dataset:read",
+        resource_name="okdata:dataset:befolkingsframskrivninger",
+    )
     assert result["statusCode"] == 403
 
 
