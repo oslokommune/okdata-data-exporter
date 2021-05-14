@@ -12,7 +12,7 @@ setuptools.setup(
     description="Lambda function to export data",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.oslo.kommune.no/origo-dataplatform/data-exporter",
+    url="https://github.com/oslokommune/data-exporter",
     packages=setuptools.find_packages(),
     install_requires=[
         "aws-xray-sdk",
