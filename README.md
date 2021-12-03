@@ -1,6 +1,6 @@
 # Data exporter
 
-Get a list of presigned S3 URLs from a dataset ID
+REST API to generate a list of presigned S3 URLs for downloading a dataset distribution.
 
 ## Setup
 
