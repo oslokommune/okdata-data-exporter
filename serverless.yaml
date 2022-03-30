@@ -32,7 +32,6 @@ plugins:
   - serverless-aws-documentation
   - serverless-pseudo-parameters
   - serverless-plugin-git-variables
-  - serverless-es-logs
   - serverless-python-requirements
 
 resources:
@@ -55,10 +54,6 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
     usePoetry: false
-  esLogs:
-    endpoint: ${ssm:/dataplatform/shared/logs-elasticsearch-endpoint}
-    index: dataplatform-services
-    filterPattern: '{ $.function_name = "*" }'
   documentation:
     title: Data Exporter
     version: ${file(metadata.yaml):version}
