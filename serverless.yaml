@@ -5,6 +5,7 @@ provider:
   name: aws
   runtime: python3.7
   region: ${opt:region, 'eu-west-1'}
+  endpointType: REGIONAL
   stage: ${opt:stage, 'dev'}
   deploymentBucket:
     name: ok-origo-dataplatform-config-${self:provider.stage}
