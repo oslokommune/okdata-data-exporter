@@ -37,12 +37,12 @@ deploy-prod: login-prod init format is-git-clean test
 	sls deploy --stage prod --aws-profile $(.PROD_PROFILE)
 
 .PHONY: undeploy
-undeploy: login-dev
+undeploy: login-dev init
 	@echo "\nUndeploying stage: dev\n"
 	sls remove --stage dev --aws-profile $(.DEV_PROFILE)
 
 .PHONY: undeploy-prod
-undeploy-prod: login-prod
+undeploy-prod: login-prod init
 	@echo "\nUndeploying stage: prod\n"
 	sls remove --stage prod --aws-profile $(.PROD_PROFILE)
 
