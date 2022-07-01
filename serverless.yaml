@@ -1,4 +1,5 @@
-frameworkVersion: ">=2.12.0 <3.0.0"
+frameworkVersion: ">=3.14.0 <4.0.0"
+
 service: data-exporter
 
 provider:
@@ -11,10 +12,12 @@ provider:
     name: ok-origo-dataplatform-config-${self:provider.stage}
     serverSideEncryption: AES256
   deploymentPrefix: deploy
-  rolePermissionsBoundary: "arn:aws:iam::#{AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
-  iamManagedPolicies:
-    - 'arn:aws:iam::#{AWS::AccountId}:policy/data-exporter-policy'
-    - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
+  logRetentionInDays: 90
+  iam:
+    role:
+      permissionsBoundary: "arn:aws:iam::${aws:accountId}:policy/oslokommune/oslokommune-boundary"
+      managedPolicies:
+        - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
   environment:
@@ -26,12 +29,11 @@ provider:
     KEYCLOAK_REALM: api-catalog
     RESOURCE_SERVER_CLIENT_ID: okdata-resource-server
     CLIENT_ID: data-uploader
-    CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret~true}
+    CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret}
     SERVICE_NAME: ${self:service}
 
 plugins:
-  - serverless-aws-documentation
-  - serverless-pseudo-parameters
+  - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-plugin-git-variables
   - serverless-python-requirements
 
@@ -42,9 +44,8 @@ resources:
     ${git:message}
 
 package:
-  exclude:
-    - "./**"
-  include:
+  patterns:
+    - '!**/*'
     - exporter/**
 
 functions:
