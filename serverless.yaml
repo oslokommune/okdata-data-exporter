@@ -56,6 +56,9 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
     usePoetry: false
+  prune:
+    automatic: true
+    number: 3
   documentation:
     title: Data Exporter
     version: ${file(metadata.yaml):version}
