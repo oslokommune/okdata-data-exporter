@@ -1,4 +1,4 @@
-arn: arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
+arn: arn:aws:lambda:${aws:region}:${aws:accountId}:function:keycloak-authorizer-${self:provider.stage}-authenticate
 
 resultTtlInSeconds: 300
 identitySource: method.request.header.Authorization
