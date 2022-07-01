@@ -1,4 +1,5 @@
 name: "Pull Request Labeler"
+
 on:
   pull_request:
 
@@ -13,6 +14,6 @@ jobs:
       pull-requests: write
 
     steps:
-    - uses: actions/labeler@v3
-      with:
-        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+      - uses: actions/labeler@v3
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"

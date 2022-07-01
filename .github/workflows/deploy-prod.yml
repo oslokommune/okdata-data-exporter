@@ -1,4 +1,5 @@
 name: Deploy Prod
+
 on:
   push:
     branches:
@@ -8,12 +9,13 @@ on:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.7
+    - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
-        python-version: 3.7
+        python-version: 3.9
     - name: Install Python dependencies
       run: pip install tox
     - name: Test with tox
