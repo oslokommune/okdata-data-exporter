@@ -17,6 +17,7 @@ provider:
     role:
       permissionsBoundary: "arn:aws:iam::${aws:accountId}:policy/oslokommune/oslokommune-boundary"
       managedPolicies:
+        - 'arn:aws:iam::${aws:accountId}:policy/data-exporter-policy'
         - 'arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess'
   tags:
     GIT_REV: ${git:branch}:${git:sha1}
