@@ -57,7 +57,7 @@ python-jose==3.3.0
     #   python-keycloak
 python-keycloak==1.8.0
     # via okdata-sdk
-requests==2.28.1
+requests==2.31.0
     # via
     #   okdata-aws
     #   okdata-data-exporter (setup.py)
