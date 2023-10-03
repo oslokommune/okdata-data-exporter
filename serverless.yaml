@@ -34,6 +34,7 @@ provider:
     SERVICE_NAME: ${self:service}
 
 plugins:
+  - serverless-better-credentials # must be first
   - "@kakkuk/serverless-aws-apigateway-documentation"
   - serverless-plugin-git-variables
   - serverless-python-requirements
