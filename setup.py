@@ -15,10 +15,13 @@ setuptools.setup(
     url="https://github.com/oslokommune/okdata-data-exporter",
     packages=setuptools.find_packages(),
     install_requires=[
-        "aws-xray-sdk",
-        "boto3",
-        "okdata-aws",
+        "aws-xray-sdk>=2.12,<3",
+        "boto3>=1.28.11",
+        "okdata-aws>=2,<3",
         "okdata-resource-auth",
         "requests",
+        # Not used directly, it's a transitive dependency from `aws-xray-sdk`,
+        # but we need version 1.14 or above to make it work with Python 3.11.
+        "wrapt>=1.14,<2",
     ],
 )
