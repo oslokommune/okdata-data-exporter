@@ -29,8 +29,6 @@ provider:
     KEYCLOAK_SERVER: ${ssm:/dataplatform/shared/keycloak-server-url}
     KEYCLOAK_REALM: api-catalog
     RESOURCE_SERVER_CLIENT_ID: okdata-resource-server
-    CLIENT_ID: data-uploader
-    CLIENT_SECRET: ${ssm:/dataplatform/data-uploader/keycloak-client-secret}
     SERVICE_NAME: ${self:service}
 
 plugins:
