@@ -9,24 +9,23 @@ on:
 jobs:
   deploy-prod:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.11'
-    - name: Install Python dependencies
-      run: pip install tox
-    - name: Test with tox
-      run: tox -e py,flake8,black
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '12.x'
-    - name: Install NPM dependencies
-      run: npm install
-    - name: Deploy Lambda functions
-      run: |
-        AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_PROD }} \
-        AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }} \
-        ./node_modules/.bin/sls deploy -s prod
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Set up Python 3.11
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: '3.11'
+      - name: Install Python dependencies
+        run: pip install tox
+      - name: Test with tox
+        run: tox -e py,flake8,black
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        with:
+          node-version: '18.x'
+      - name: Install NPM dependencies
+        run: npm install
+      - name: Deploy Lambda functions
+        run: |
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_PROD }} \
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }} \
+          ./node_modules/.bin/sls deploy -s prod
