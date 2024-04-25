@@ -45,7 +45,7 @@ pyasn1==0.4.8
     # via
     #   python-jose
     #   rsa
-pydantic==1.9.1
+pydantic==1.10.13
     # via okdata-aws
 pyjwt==2.4.0
     # via okdata-sdk
