@@ -17,7 +17,7 @@ setuptools.setup(
     install_requires=[
         "aws-xray-sdk>=2.12,<3",
         "boto3>=1.28.11",
-        "okdata-aws>=4.1",
+        "okdata-aws>=5",
         "okdata-resource-auth",
         "requests",
         # Not used directly, it's a transitive dependency from `aws-xray-sdk`,
