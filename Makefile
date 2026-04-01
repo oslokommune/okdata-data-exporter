@@ -6,10 +6,7 @@ BUILD_VENV ?= .build_venv
 BUILD_PY := $(BUILD_VENV)/bin/python
 
 .PHONY: init
-init: node_modules $(BUILD_VENV)
-
-node_modules: package.json package-lock.json
-	npm install
+init: $(BUILD_VENV)
 
 $(BUILD_VENV):
 	$(GLOBAL_PY) -m venv $(BUILD_VENV)
@@ -30,21 +27,36 @@ upgrade-deps: $(BUILD_VENV)/bin/pip-compile
 .PHONY: deploy
 deploy: login-dev init format test
 	@echo "\nDeploying to stage: dev\n"
-	sls deploy --stage dev --aws-profile $(.DEV_PROFILE)
+	sam build
+	sam validate --lint
+	sam deploy --config-env dev \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset \
+		--parameter-overrides "Stage=dev GitRev=$$(git rev-parse --abbrev-ref HEAD):$$(git rev-parse HEAD)" \
+		--tags "GIT_REV=$$(git rev-parse --abbrev-ref HEAD):$$(git rev-parse HEAD)" \
+		--profile $(.DEV_PROFILE)
 
 .PHONY: deploy-prod
 deploy-prod: login-prod init format is-git-clean test
-	sls deploy --stage prod --aws-profile $(.PROD_PROFILE)
+	@echo "\nDeploying to stage: prod\n"
+	sam build
+	sam validate --lint
+	sam deploy --config-env prod \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset \
+		--parameter-overrides "Stage=prod GitRev=$$(git rev-parse --abbrev-ref HEAD):$$(git rev-parse HEAD)" \
+		--tags "GIT_REV=$$(git rev-parse --abbrev-ref HEAD):$$(git rev-parse HEAD)" \
+		--profile $(.PROD_PROFILE)
 
 .PHONY: undeploy
 undeploy: login-dev init
 	@echo "\nUndeploying stage: dev\n"
-	sls remove --stage dev --aws-profile $(.DEV_PROFILE)
+	sam delete --config-env dev --profile $(.DEV_PROFILE)
 
 .PHONY: undeploy-prod
 undeploy-prod: login-prod init
 	@echo "\nUndeploying stage: prod\n"
-	sls remove --stage prod --aws-profile $(.PROD_PROFILE)
+	sam delete --config-env prod --profile $(.PROD_PROFILE)
 
 .PHONY: login-dev
 login-dev: init

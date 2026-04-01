@@ -25,11 +25,10 @@ jobs:
         run: pip install tox
       - name: Test with tox
         run: tox -e py,flake8,black
-      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+      - name: Set up SAM CLI
+        uses: aws-actions/setup-sam@d78e1a4a9656d3b223e59b80676a797f20093133 # v2
         with:
-          node-version: '18.x'
-      - name: Install NPM dependencies
-        run: npm install
+          use-installer: true
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@a03048d87541d1d9fcf2ecf528a4a65ba9bd7838 # v5.0.0
         with:
@@ -37,5 +36,14 @@ jobs:
           aws-region: eu-west-1
       - name: Sts GetCallerIdentity
         run: aws sts get-caller-identity
-      - name: Deploy Lambda functions
-        run: ./node_modules/.bin/sls deploy -s dev
+      - name: Build
+        run: sam build
+      - name: Deploy
+        run: |
+          GIT_REV="${GITHUB_REF_NAME}:${GITHUB_SHA}"
+          sam deploy \
+            --config-env dev \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides "Stage=dev GitRev=${GIT_REV}" \
+            --tags "GIT_REV=${GIT_REV}"
