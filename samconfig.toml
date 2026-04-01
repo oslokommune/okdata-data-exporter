@@ -1,0 +1,23 @@
+version = 0.1
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[dev.deploy.parameters]
+stack_name = "data-exporter-dev"
+s3_bucket = "ok-origo-dataplatform-config-dev"
+s3_prefix = "deploy/data-exporter"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Stage=dev"
+confirm_changeset = false
+
+[prod.deploy.parameters]
+stack_name = "data-exporter-prod"
+s3_bucket = "ok-origo-dataplatform-config-prod"
+s3_prefix = "deploy/data-exporter"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Stage=prod"
+confirm_changeset = true

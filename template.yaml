@@ -1,0 +1,119 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  data-exporter
+
+  REST API to generate presigned S3 URLs for downloading dataset distributions.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  GitRev:
+    Type: String
+    Default: ""
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Timeout: 6
+    MemorySize: 1024
+    PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/oslokommune/oslokommune-boundary"
+    Tags:
+      GIT_REV: !Ref GitRev
+    Environment:
+      Variables:
+        GIT_REV: !Ref GitRev
+        BUCKET: !Sub "ok-origo-dataplatform-${Stage}"
+        METADATA_API_URL: !Sub "{{resolve:ssm:/dataplatform/shared/api-gateway-url}}/metadata"
+        ENABLE_AUTH: "true"
+        KEYCLOAK_SERVER: "{{resolve:ssm:/dataplatform/shared/keycloak-server-url}}"
+        KEYCLOAK_REALM: api-catalog
+        RESOURCE_SERVER_CLIENT_ID: okdata-resource-server
+        SERVICE_NAME: data-exporter
+
+Resources:
+  DataExporterApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "${Stage}-data-exporter"
+      StageName: !Ref Stage
+      EndpointConfiguration:
+        Type: REGIONAL
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: KeycloakAuthorizer
+        Authorizers:
+          KeycloakAuthorizer:
+            FunctionArn: !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:keycloak-authorizer-${Stage}-authenticate"
+            FunctionPayloadType: TOKEN
+            Identity:
+              Header: Authorization
+              ValidationExpression: "^Bearer [-0-9a-zA-Z\\._]*$"
+              ReauthorizeEvery: 300
+      Tags:
+        GIT_REV: !Ref GitRev
+
+  GenerateSignedUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "data-exporter-${Stage}-generate-signed-url"
+      Handler: exporter.handlers.generate_signed_url
+      CodeUri: .
+      Policies:
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/data-exporter-policy"
+        - "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+      Events:
+        GetSignedUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DataExporterApi
+            Path: /{dataset}/{version}/{edition}
+            Method: GET
+    Metadata:
+      BuildMethod: python3.11
+
+  GenerateSignedUrlPublic:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "data-exporter-${Stage}-generate-signed-url-public"
+      Handler: exporter.handlers.generate_signed_url_public
+      CodeUri: .
+      Policies:
+        - !Sub "arn:aws:iam::${AWS::AccountId}:policy/data-exporter-policy"
+        - "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+      Events:
+        GetSignedUrlPublic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DataExporterApi
+            Path: /public/{dataset}/{version}/{edition}
+            Method: GET
+            Auth:
+              Authorizer: NONE
+    Metadata:
+      BuildMethod: python3.11
+
+  GenerateSignedUrlLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GenerateSignedUrl}"
+      RetentionInDays: 90
+
+  GenerateSignedUrlPublicLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GenerateSignedUrlPublic}"
+      RetentionInDays: 90

@@ -156,3 +156,4 @@ venv.bak/
 
 .serverless/
 node_modules/
+.aws-sam/
